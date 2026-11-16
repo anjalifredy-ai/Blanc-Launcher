@@ -102,7 +102,6 @@ jobs:
           AERIX_KEYSTORE_ALIAS_IN: ${{ secrets.AERIX_KEYSTORE_ALIAS }}
         run: |
           set -eu
-          echo "::warning::diag P12=${{ secrets.AERIX_KEYSTORE_P12 != '' }} PASS=${{ secrets.AERIX_KEYSTORE_PASSWORD != '' }} KS=${{ secrets.AERIX_KEYSTORE != '' }} REL=${{ secrets.AERIX_RELEASE_P12 != '' }} KEYP12=${{ secrets.KEYSTORE_P12 != '' }} VAR=${{ vars.AERIX_KEYSTORE_P12 != '' }}"
           test -n "$AERIX_KEYSTORE_P12_B64" || {
             echo "::error::AERIX_KEYSTORE_P12 is not set. A public release is never signed with a key"
             echo "   found in the repository, so this build stops instead of shipping something"
