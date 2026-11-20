@@ -2,6 +2,7 @@ package aerix.client.mod;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
@@ -67,7 +68,9 @@ public final class ClientPackLiveApply {
             out.setProperty("result", status);
             out.setProperty("ts", String.valueOf(System.currentTimeMillis()));
             statusFile.getParentFile().mkdirs();
-            statusFile.outputStream().use { out.store(it, "Aerix pack live-apply status") };
+            try (FileOutputStream fos = new FileOutputStream(statusFile)) {
+                out.store(fos, "Aerix pack live-apply status");
+            }
             cmdFile.delete();
         } catch (Throwable ignored) {
         }
@@ -75,10 +78,9 @@ public final class ClientPackLiveApply {
 
     /**
      * Tries the intermediary name first (Yarn / Intermediary), then the official mapped name.
-     * Covers 1.16.5 → 1.21.x.
+     * Covers 1.16.5 to 1.21.x.
      */
     private boolean invokeReloadResources(Object mc) {
-        // Intermediary: method_1513 / method_1551 already resolved elsewhere; the reload is method_1521 on many versions.
         String[] candidates = {
                 "method_1521",          // intermediary reloadResources
                 "reloadResources",      // official / modern mapped
@@ -88,8 +90,7 @@ public final class ClientPackLiveApply {
             try {
                 Method m = mc.getClass().getMethod(name);
                 m.setAccessible(true);
-                Object result = m.invoke(mc);
-                // Some versions return a CompletableFuture; we fire-and-forget.
+                m.invoke(mc);
                 return true;
             } catch (NoSuchMethodException ignored) {
             } catch (Throwable t) {
