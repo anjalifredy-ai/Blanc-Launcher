@@ -241,6 +241,58 @@ public class HostService extends Service implements SleepListener.Host {
         }
     }
 
+    /** Writes why the server process ended into the console: Android's own exit reason and any JVM crash report. */
+    private void diagnose(HostedServer s) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+                if (am != null) {
+                    for (android.app.ApplicationExitInfo info : am.getHistoricalProcessExitReasons(getPackageName(), 0, 10)) {
+                        String proc = info.getProcessName();
+                        if (proc != null && proc.endsWith(":serverjvm")) {
+                            hostLog(s, "Android says the server process ended: " + exitReason(info.getReason())
+                                    + ", status " + info.getStatus()
+                                    + (info.getDescription() == null ? "" : ", " + info.getDescription()));
+                            break;
+                        }
+                    }
+                }
+            }
+            java.util.List<File> dirs = new java.util.ArrayList<>();
+            dirs.add(store.dir(s.id));
+            dirs.add(new File(store.dir(s.id), "server"));
+            for (File dir : dirs) {
+                File[] crashes = dir.listFiles((d, name) -> name.startsWith("hs_err_pid"));
+                if (crashes == null) continue;
+                for (File crash : crashes) {
+                    java.util.List<String> lines = Files.readAllLines(crash.toPath(), StandardCharsets.UTF_8);
+                    hostLog(s, "Java crash report " + crash.getName() + ":");
+                    for (int i = 0; i < Math.min(28, lines.size()); i++) hostLog(s, "  " + lines.get(i));
+                    //noinspection ResultOfMethodCallIgnored
+                    crash.delete();
+                }
+            }
+            hostLog(s, "Device: Android " + Build.VERSION.RELEASE + ", " + Build.SUPPORTED_ABIS[0] + ", server heap " + s.ramMb + " MB");
+        } catch (Throwable ignored) {
+            // Diagnostics only.
+        }
+    }
+
+    private static String exitReason(int reason) {
+        switch (reason) {
+            case 1: return "the process exited by itself";
+            case 2: return "killed by a signal";
+            case 3: return "KILLED BECAUSE THE PHONE RAN OUT OF MEMORY (lower this server's RAM in Settings)";
+            case 4: return "Java/Android crash";
+            case 5: return "native crash";
+            case 6: return "not responding (ANR)";
+            case 7: return "failed to initialise";
+            case 9: return "used too many resources";
+            case 10: return "stopped by the user";
+            default: return "reason code " + reason;
+        }
+    }
+
     private void startServer() {
         synchronized (lock) {
             if (server == null || !HostStatus.SLEEPING.equals(status.state) || jvmActive || installing) return;
@@ -325,6 +377,7 @@ public class HostService extends Service implements SleepListener.Host {
                 exit = "";
             }
         }
+        if (s != null && !exit.equals("0")) diagnose(s);
         if (wasInstall) {
             finishInstall(s, exit);
             return;

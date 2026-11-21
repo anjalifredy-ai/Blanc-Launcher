@@ -291,6 +291,27 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
                 else -> {}
             }
         }
+        SettingSwitch(
+            "Online mode",
+            if (server.onlineMode) "ON: only paid Minecraft accounts can join." else "OFF: offline / cracked players can join.",
+            server.onlineMode
+        ) { v ->
+            val latest = store.get(server.id) ?: server
+            latest.onlineMode = v
+            runCatching { store.save(latest) }
+                .onSuccess {
+                    server = latest
+                    if (state == HostStatus.SLEEPING) HostClient.host(context, latest.id)
+                    Toast.makeText(context, if (state == HostStatus.RUNNING || state == HostStatus.STARTING) "Saved. Restart the server to apply." else "Saved", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { Toast.makeText(context, "Could not save: ${it.message}", Toast.LENGTH_LONG).show() }
+        }
+        OutlinedButton(onClick = {
+            val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val text = "State: ${status.state}\nMessage: ${status.message}\n\n" + HostClient.consoleTail(context, server.id, 24 * 1024)
+            cb.setPrimaryClip(ClipData.newPlainText("Server diagnostics", text))
+            Toast.makeText(context, "Diagnostics copied", Toast.LENGTH_SHORT).show()
+        }) { Text("Copy diagnostics", fontSize = 12.sp) }
         Text(
             if (server.autoSleep) "Sleeps after ${server.idleMinutes} min with nobody online and wakes when someone joins. Change this in Settings."
             else "Auto sleep is off. Turn it on in Settings.",
@@ -473,7 +494,7 @@ private fun SettingsTab(
     val store = remember { HostClient.store(context) }
     var name by remember(server.id) { mutableStateOf(server.name) }
     var description by remember(server.id) { mutableStateOf(server.description) }
-    var onlineMode by remember(server.id) { mutableStateOf(server.onlineMode) }
+    var onlineMode by remember(server.id, server.onlineMode) { mutableStateOf(server.onlineMode) }
     var maxPlayers by remember(server.id) { mutableStateOf(server.maxPlayers.toString()) }
     var ram by remember(server.id) { mutableStateOf(server.ramMb.toString()) }
     var gamemode by remember(server.id) { mutableStateOf(server.gamemode) }
