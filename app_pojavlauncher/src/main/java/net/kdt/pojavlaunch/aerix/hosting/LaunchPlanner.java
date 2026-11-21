@@ -25,6 +25,8 @@ public final class LaunchPlanner {
         plan.jvmArgs.add("-Djline.terminal=jline.UnsupportedTerminal");
         plan.jvmArgs.add("-Dterminal.jline=false");
         plan.jvmArgs.add("-Dterminal.ansi=false");
+        // The Java on Android is not an official vendor build, and Paper (and its forks) refuse to start on one.
+        plan.jvmArgs.add("-DPaper.IgnoreJavaVersion=true");
     }
 
     /** The plan for running the installed server in [dir]. Throws if the install is missing or unrecognised. */
