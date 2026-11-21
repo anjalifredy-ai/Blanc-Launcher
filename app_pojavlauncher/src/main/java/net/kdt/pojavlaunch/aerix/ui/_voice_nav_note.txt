@@ -1,0 +1,4 @@
+VOICE_CHAT section + mic rail entry planned.
+Restore AerixNavigationRail.kt and AerixLauncherScreen.kt from commit 0d03d1c if empty.
+Then add LauncherSection.VOICE_CHAT and RailIconItem(ic_microphone).
+VoiceChatScreen.kt is already in screens/.
