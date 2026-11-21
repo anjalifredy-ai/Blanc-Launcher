@@ -39,8 +39,28 @@ public class ExitActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** Lets a headless JVM host (the server process) handle the JVM ending instead of the game's exit screen. */
+    public interface QuietExitHandler {
+        void onJvmExit(int code, boolean isSignal);
+    }
+
+    private static volatile QuietExitHandler sQuietExitHandler;
+
+    public static void setQuietExitHandler(QuietExitHandler handler) {
+        sQuietExitHandler = handler;
+    }
+
     @SuppressWarnings("unused") //used by native jre_launcher_new
     public static void showExitMessage(Context ctx, int code, boolean isSignal) {
+        QuietExitHandler quiet = sQuietExitHandler;
+        if (quiet != null) {
+            try {
+                quiet.onJvmExit(code, isSignal);
+            } finally {
+                System.exit(0);
+            }
+            return;
+        }
         if((!isSignal && code == 0)) {
             if(ctx != null) Tools.restartLauncherActivity(ctx);
             System.exit(0);

@@ -67,6 +67,7 @@ public final class LaunchPlanner {
         LaunchPlan plan = new LaunchPlan();
         commonJvmArgs(plan);
         plan.mainClass = mainClassOf(jar);
+        plan.workDir = jar.getAbsoluteFile().getParentFile();
         plan.classpath.add(jar.getAbsolutePath());
         if (serverArgs) plan.appArgs.add("nogui");
         return plan;
@@ -124,6 +125,7 @@ public final class LaunchPlanner {
     /** Turns Forge/NeoForge's unix_args.txt (JVM options, then the main class, then program args) into a plan. */
     public static LaunchPlan argsFilePlan(File dir, File argsFile) throws IOException {
         LaunchPlan plan = new LaunchPlan();
+        plan.workDir = dir.getAbsoluteFile();
         commonJvmArgs(plan);
         List<String> tokens = new ArrayList<>();
         for (String line : Files.readAllLines(argsFile.toPath(), StandardCharsets.UTF_8)) {
