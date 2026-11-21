@@ -261,7 +261,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
     var confirmDelete by remember { mutableStateOf(false) }
     val (label, color) = stateLabel(server, status)
 
-    AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
+    val infoBlock: @Composable ColumnScope.() -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             LogoImage(server.id, logoRevision, 44)
             StatusChip(label, color)
@@ -271,14 +271,13 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
             Text(status.message, color = if (state == HostStatus.ERROR) Color(0xFFFF6B6B) else AerixSurface.textSecondary, fontSize = 12.sp)
         }
         if (otherBusy) Text("Another server is using the host right now. Stop it first.", color = Color(0xFFE0A84F), fontSize = 12.sp)
-
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             when {
                 !server.installed && state != HostStatus.INSTALLING ->
                     Button(enabled = !otherBusy, onClick = { HostClient.install(context, server.id) }) { Text("Install") }
                 state == HostStatus.OFF || state == HostStatus.ERROR -> {
                     Button(enabled = !otherBusy && server.installed, onClick = { HostClient.startNow(context, server.id) }) { Text("Start") }
-                    OutlinedButton(enabled = !otherBusy && server.installed, onClick = { HostClient.host(context, server.id) }) { Text("Host (sleep when empty)") }
+                    OutlinedButton(enabled = !otherBusy && server.installed, onClick = { HostClient.host(context, server.id) }) { Text("Host") }
                 }
                 state == HostStatus.SLEEPING -> {
                     Button(onClick = { HostClient.startNow(context, server.id) }) { Text("Wake now") }
@@ -292,17 +291,49 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
                 else -> {}
             }
         }
-
+        Text(
+            if (server.autoSleep) "Sleeps after ${server.idleMinutes} min with nobody online and wakes when someone joins. Change this in Settings."
+            else "Auto sleep is off. Turn it on in Settings.",
+            color = AerixSurface.textMuted, fontSize = 11.sp
+        )
         AddressCard(server, status)
-
+    }
+    val tabHeader: @Composable () -> Unit = {
         TabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Console") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Settings") })
         }
+    }
+    val tabBody: @Composable (Modifier) -> Unit = { mod ->
         if (tab == 0) {
-            ConsoleTab(server, state, Modifier.weight(1f))
+            ConsoleTab(server, status, mod)
         } else {
-            SettingsTab(server, state, logoRevision, onLogoChanged, onSaved = { server = it }, onDelete = { confirmDelete = true }, modifier = Modifier.weight(1f))
+            SettingsTab(server, state, logoRevision, onLogoChanged, onSaved = { server = it }, onDelete = { confirmDelete = true }, modifier = mod)
+        }
+    }
+
+    AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            // The launcher is usually landscape: controls on the left, console/settings get the full height on the right.
+            if (maxWidth > 520.dp && maxWidth > maxHeight) {
+                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(Modifier.width(maxWidth * 0.36f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        infoBlock()
+                    }
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        tabHeader()
+                        tabBody(Modifier.weight(1f))
+                    }
+                }
+            } else {
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.weight(0.45f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        infoBlock()
+                    }
+                    tabHeader()
+                    tabBody(Modifier.weight(1f))
+                }
+            }
         }
     }
 
@@ -354,42 +385,80 @@ private fun AddressCard(server: HostedServer, status: HostStatus) {
     }
 }
 
+private fun colorFor(line: String): Color = when {
+    line.startsWith(">") -> Color(0xFF7FD6FF)
+    line.startsWith("[Aerix]") -> Color(0xFFB7A9FF)
+    line.contains("ERROR", true) || line.contains("Exception") || line.contains("FATAL") -> Color(0xFFFF7B7B)
+    line.contains("WARN", true) -> Color(0xFFE8C46A)
+    line.contains("Done (") || line.contains("joined the game") -> Color(0xFF7DE58F)
+    else -> Color(0xFFCFE3D6)
+}
+
 @Composable
-private fun ConsoleTab(server: HostedServer, state: String, modifier: Modifier) {
+private fun ConsoleTab(server: HostedServer, status: HostStatus, modifier: Modifier) {
     val context = LocalContext.current
-    var text by remember { mutableStateOf("") }
+    val state = status.state
+    var raw by remember { mutableStateOf("") }
     var input by remember { mutableStateOf("") }
-    val scroll = rememberScrollState()
+    var follow by remember { mutableStateOf(true) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     LaunchedEffect(server.id) {
         while (true) {
-            text = withContext(Dispatchers.IO) { HostClient.consoleTail(context, server.id, 48 * 1024) }
-            delay(1000)
+            raw = withContext(Dispatchers.IO) { HostClient.consoleTail(context, server.id, 64 * 1024) }
+            delay(800)
         }
     }
-    LaunchedEffect(text) { scroll.scrollTo(scroll.maxValue) }
+    val lines = remember(raw) { if (raw.isEmpty()) emptyList() else raw.trimEnd('\n').split('\n').takeLast(600) }
+    LaunchedEffect(lines.size, follow) {
+        if (follow && lines.isNotEmpty()) listState.scrollToItem(lines.size - 1)
+    }
     val canSend = state == HostStatus.RUNNING || state == HostStatus.STARTING
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    fun send(text: String) {
+        val t = text.trim().removePrefix("/")
+        if (t.isNotEmpty()) HostClient.command(context, server.id, t)
+    }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("${lines.size} lines", color = AerixSurface.textMuted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+            FilterChip(selected = follow, onClick = { follow = !follow }, label = { Text("Auto-scroll", fontSize = 11.sp) })
+            TextButton(onClick = {
+                val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cb.setPrimaryClip(ClipData.newPlainText("Server console", raw))
+                Toast.makeText(context, "Console copied", Toast.LENGTH_SHORT).show()
+            }) { Text("Copy", fontSize = 12.sp) }
+        }
         Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF0B1118), modifier = Modifier.weight(1f).fillMaxWidth()) {
-            SelectionContainer {
-                Text(
-                    text.ifEmpty { "The console shows the server's output once it starts." },
-                    color = Color(0xFFCFE3D6), fontFamily = FontFamily.Monospace, fontSize = 10.5.sp, lineHeight = 14.sp,
-                    modifier = Modifier.padding(10.dp).verticalScroll(scroll)
-                )
+            if (lines.isEmpty()) {
+                Box(Modifier.fillMaxSize().padding(12.dp)) {
+                    Text(
+                        if (status.message.isNotBlank()) status.message else "The console shows the server's output once it starts.",
+                        color = AerixSurface.textMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp
+                    )
+                }
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    items(lines.size) { i ->
+                        val line = lines[i]
+                        Text(line, color = colorFor(line), fontFamily = FontFamily.Monospace, fontSize = 10.5.sp, lineHeight = 14.sp)
+                    }
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("list", "save-all", "difficulty", "whitelist list").forEach { c ->
+                AssistChip(onClick = { if (c == "difficulty") input = "difficulty " else send(c) }, enabled = canSend, label = { Text(c, fontSize = 11.sp) })
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 input, { input = it }, enabled = canSend, singleLine = true, modifier = Modifier.weight(1f),
-                placeholder = { Text(if (canSend) "Command (without /)" else "Start the server to send commands") },
+                placeholder = { Text(if (canSend) "Type a command (op Steve, say hi, stop)" else "Start the server to send commands") },
                 keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = {
-                    if (canSend && input.isNotBlank()) { HostClient.command(context, server.id, input.removePrefix("/")); input = "" }
+                    if (canSend && input.isNotBlank()) { send(input); input = "" }
                 })
             )
-            Button(enabled = canSend && input.isNotBlank(), onClick = {
-                HostClient.command(context, server.id, input.removePrefix("/")); input = ""
-            }) { Text("Send") }
+            Button(enabled = canSend && input.isNotBlank(), onClick = { send(input); input = "" }) { Text("Send") }
         }
     }
 }

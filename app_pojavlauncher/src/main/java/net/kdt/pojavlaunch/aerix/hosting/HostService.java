@@ -233,6 +233,14 @@ public class HostService extends Service implements SleepListener.Host {
         return true;
     }
 
+    private void hostLog(HostedServer s, String line) {
+        try (java.io.FileWriter w = new java.io.FileWriter(new File(store.dir(s.id), "aerix-host.log"), true)) {
+            w.write("[Aerix] " + line + "\n");
+        } catch (IOException ignored) {
+            // Diagnostics only.
+        }
+    }
+
     private void startServer() {
         synchronized (lock) {
             if (server == null || !HostStatus.SLEEPING.equals(status.state) || jvmActive || installing) return;
@@ -247,6 +255,9 @@ public class HostService extends Service implements SleepListener.Host {
         listener.setStarting();
         stopAskedByUs = false;
         work.execute(() -> {
+            //noinspection ResultOfMethodCallIgnored
+            new File(store.dir(s.id), "aerix-host.log").delete();
+            hostLog(s, "Starting " + s.software.displayName + " " + s.mcVersion);
             try {
                 setMessage("Checking Java...");
                 ServerRuntime.ensure(this, s.mcVersion);
@@ -255,6 +266,7 @@ public class HostService extends Service implements SleepListener.Host {
                 launchJvm(s, null);
             } catch (Throwable t) {
                 Log.e(TAG, "start failed", t);
+                hostLog(s, "Start failed: " + t);
                 synchronized (lock) {
                     if (listener != null) listener.setSleeping();
                     setState(HostStatus.SLEEPING, "Could not start: " + t.getMessage());
@@ -319,6 +331,7 @@ public class HostService extends Service implements SleepListener.Host {
         }
         synchronized (lock) {
             boolean clean = exit.equals("0") || stopAskedByUs;
+            if (!clean && s != null) hostLog(s, "The server process ended without a clean exit (" + (exit.isEmpty() ? "no exit code, it was killed or crashed" : exit) + ")");
             if (listener != null) listener.setSleeping();
             idle.reset();
             status.players = -1;
@@ -520,9 +533,9 @@ public class HostService extends Service implements SleepListener.Host {
                 if (r != null) {
                     synchronized (lock) {
                         status.players = r.online;
-                        status.maxPlayers = r.max;
+                        if (r.max > 0) status.maxPlayers = r.max;
                     }
-                    if (s.autoSleep && idle.shouldSleep(r.online, now, Math.max(1, s.idleMinutes) * 60_000L)) {
+                    if (r.online >= 0 && s.autoSleep && idle.shouldSleep(r.online, now, Math.max(1, s.idleMinutes) * 60_000L)) {
                         stopServer(true);
                     }
                 }
@@ -537,11 +550,17 @@ public class HostService extends Service implements SleepListener.Host {
         }
     }
 
+    /** Asks the local server for its player count. If the server is up but answers oddly, online is -1. */
     private StatusPing.Result ping(HostedServer s) {
         try {
-            return StatusPing.ping("127.0.0.1", s.privatePort, 1500);
-        } catch (IOException e) {
-            return null;
+            return StatusPing.ping("127.0.0.1", s.privatePort, 2500);
+        } catch (IOException first) {
+            try (java.net.Socket probe = new java.net.Socket()) {
+                probe.connect(new java.net.InetSocketAddress("127.0.0.1", s.privatePort), 1000);
+                return new StatusPing.Result(-1, 0, null);
+            } catch (IOException e) {
+                return null;
+            }
         }
     }
 

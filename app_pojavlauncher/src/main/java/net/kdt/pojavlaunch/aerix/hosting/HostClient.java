@@ -58,6 +58,18 @@ public final class HostClient {
 
     /** The last [maxBytes] of the server's console log. */
     public static String consoleTail(Context context, String id, int maxBytes) {
+        String host = "";
+        try {
+            File hostLog = new File(store(context).dir(id), "aerix-host.log");
+            if (hostLog.isFile()) host = new String(java.nio.file.Files.readAllBytes(hostLog.toPath()), StandardCharsets.UTF_8);
+        } catch (IOException ignored) {
+            host = "";
+        }
+        String body = serverLogTail(context, id, maxBytes);
+        return host.isEmpty() ? body : host + body;
+    }
+
+    private static String serverLogTail(Context context, String id, int maxBytes) {
         File log = new File(store(context).dir(id), ServerJvmService.CONSOLE_LOG);
         if (!log.isFile()) return "";
         try (RandomAccessFile file = new RandomAccessFile(log, "r")) {
