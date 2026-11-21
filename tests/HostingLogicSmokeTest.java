@@ -1,5 +1,8 @@
 import net.kdt.pojavlaunch.aerix.hosting.BoreTunnel;
 import net.kdt.pojavlaunch.aerix.hosting.IdleTracker;
+import net.kdt.pojavlaunch.aerix.hosting.LaunchPlan;
+import net.kdt.pojavlaunch.aerix.hosting.LaunchPlanner;
+import net.kdt.pojavlaunch.aerix.hosting.ServerSoftware;
 import net.kdt.pojavlaunch.aerix.hosting.McProtocol;
 import net.kdt.pojavlaunch.aerix.hosting.ServerProperties;
 import net.kdt.pojavlaunch.aerix.hosting.SleepListener;
@@ -35,6 +38,7 @@ public class HostingLogicSmokeTest {
         bore();
         properties();
         idle();
+        planner();
         System.out.println("Hosting logic smoke test passed");
     }
 
@@ -281,5 +285,82 @@ public class HostingLogicSmokeTest {
         check(!t.shouldSleep(2, 6 * 60_000L, limit), "players reset the clock");
         check(!t.shouldSleep(0, 7 * 60_000L, limit), "clock restarts after players leave");
         check(t.shouldSleep(0, 12 * 60_000L, limit), "sleeps again after another full limit");
+    }
+
+    static File makeJar(File file, String mainClass) throws Exception {
+        java.util.jar.Manifest manifest = new java.util.jar.Manifest();
+        manifest.getMainAttributes().put(java.util.jar.Attributes.Name.MANIFEST_VERSION, "1.0");
+        if (mainClass != null) manifest.getMainAttributes().put(java.util.jar.Attributes.Name.MAIN_CLASS, mainClass);
+        try (java.util.jar.JarOutputStream out = new java.util.jar.JarOutputStream(new java.io.FileOutputStream(file), manifest)) {
+            out.putNextEntry(new java.util.zip.ZipEntry("x.txt"));
+            out.write(1);
+            out.closeEntry();
+        }
+        return file;
+    }
+
+    static void planner() throws Exception {
+        File dir = Files.createTempDirectory("aerix-plan").toFile();
+
+        // Vanilla / Paper style: server.jar with a Main-Class.
+        makeJar(new File(dir, "server.jar"), "io.papermc.paperclip.Main");
+        LaunchPlan paper = LaunchPlanner.forServer(dir, ServerSoftware.PAPER);
+        check("io.papermc.paperclip.Main".equals(paper.mainClass), "paper main class");
+        check(paper.classpath.size() == 1 && paper.classpath.get(0).endsWith("server.jar"), "paper classpath");
+        check(paper.appArgs.contains("nogui"), "nogui");
+        check(paper.jvmArgs.contains("-Dterminal.jline=false"), "plain stdin flags");
+
+        // Missing install is a clear error, not a crash later.
+        try {
+            LaunchPlanner.forServer(dir, ServerSoftware.FABRIC);
+            check(false, "missing fabric launch jar should throw");
+        } catch (java.io.IOException expected) {
+            check(expected.getMessage().contains("Fabric"), "message names the software");
+        }
+        makeJar(new File(dir, "fabric-server-launch.jar"), "net.fabricmc.loader.impl.launch.server.FabricServerLauncher");
+        check("net.fabricmc.loader.impl.launch.server.FabricServerLauncher".equals(
+                LaunchPlanner.forServer(dir, ServerSoftware.FABRIC).mainClass), "fabric main class");
+
+        // Installer plan carries the installer args and no nogui.
+        File installer = makeJar(new File(dir, "installer.jar"), "net.minecraftforge.installer.SimpleInstaller");
+        LaunchPlan inst = LaunchPlanner.installerPlan(installer, java.util.Arrays.asList("--installServer"));
+        check(inst.appArgs.size() == 1 && inst.appArgs.get(0).equals("--installServer"), "installer args");
+
+        // Modern Forge: unix_args.txt.
+        File forgeDir = Files.createTempDirectory("aerix-forge").toFile();
+        File versionDir = new File(forgeDir, "libraries/net/minecraftforge/forge/1.20.1-47.2.0");
+        versionDir.mkdirs();
+        Files.write(new File(versionDir, "unix_args.txt").toPath(), (
+                "-DlegacyClassPath=libraries/a.jar:libraries/b.jar\n"
+              + "-DlibraryDirectory=libraries\n"
+              + "-p libraries/cpw/mods/bootstraplauncher/1.1.2/bootstraplauncher-1.1.2.jar:libraries/cpw/mods/securejarhandler/2.1.4/securejarhandler-2.1.4.jar\n"
+              + "--add-modules ALL-MODULE-PATH\n"
+              + "--add-opens java.base/java.util.jar=cpw.mods.securejarhandler\n"
+              + "cpw.mods.bootstraplauncher.BootstrapLauncher --launchTarget forgeserver --fml.forgeVersion 47.2.0 --fml.mcVersion 1.20.1\n"
+        ).getBytes(StandardCharsets.UTF_8));
+        LaunchPlan forge = LaunchPlanner.forServer(forgeDir, ServerSoftware.FORGE);
+        check("cpw.mods.bootstraplauncher.BootstrapLauncher".equals(forge.mainClass), "forge main class: " + forge.mainClass);
+        check(forge.appArgs.equals(java.util.Arrays.asList("--launchTarget", "forgeserver", "--fml.forgeVersion", "47.2.0", "--fml.mcVersion", "1.20.1", "nogui")), "forge app args: " + forge.appArgs);
+        int p = forge.jvmArgs.indexOf("-p");
+        check(p >= 0 && forge.jvmArgs.get(p + 1).startsWith(forgeDir.getAbsolutePath() + "/libraries/cpw/mods/bootstraplauncher"), "module path made absolute");
+        check(forge.jvmArgs.get(p + 1).contains(":" + forgeDir.getAbsolutePath() + "/libraries/cpw/mods/securejarhandler"), "every module path entry absolute");
+        check(forge.jvmArgs.contains("-DlibraryDirectory=" + forgeDir.getAbsolutePath() + "/libraries"), "library directory absolute");
+        int am = forge.jvmArgs.indexOf("--add-modules");
+        check(am >= 0 && forge.jvmArgs.get(am + 1).equals("ALL-MODULE-PATH"), "option values stay together");
+        check(forge.jvmArgs.indexOf("cpw.mods.bootstraplauncher.BootstrapLauncher") < 0, "main class is not a JVM arg");
+
+        // Old Forge (<= 1.16.5): a plain forge-*.jar.
+        File oldDir = Files.createTempDirectory("aerix-oldforge").toFile();
+        makeJar(new File(oldDir, "forge-1.12.2-14.23.5.2860.jar"), "net.minecraftforge.fml.relauncher.ServerLaunchWrapper");
+        makeJar(new File(oldDir, "forge-1.12.2-14.23.5.2860-installer.jar"), "x.Installer");
+        LaunchPlan old = LaunchPlanner.forServer(oldDir, ServerSoftware.FORGE);
+        check(old.classpath.get(0).endsWith("forge-1.12.2-14.23.5.2860.jar") && "net.minecraftforge.fml.relauncher.ServerLaunchWrapper".equals(old.mainClass), "legacy forge jar, not the installer");
+
+        // NeoForge looks under the neoforged folder.
+        File neoDir = Files.createTempDirectory("aerix-neo").toFile();
+        File neoVersion = new File(neoDir, "libraries/net/neoforged/neoforge/21.4.111");
+        neoVersion.mkdirs();
+        Files.write(new File(neoVersion, "unix_args.txt").toPath(), "-DlibraryDirectory=libraries\nnet.neoforged.bootstraplauncher.BootstrapLauncher --launchTarget neoforgeserver\n".getBytes(StandardCharsets.UTF_8));
+        check("net.neoforged.bootstraplauncher.BootstrapLauncher".equals(LaunchPlanner.forServer(neoDir, ServerSoftware.NEOFORGE).mainClass), "neoforge args file");
     }
 }
