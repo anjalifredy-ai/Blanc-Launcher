@@ -202,6 +202,7 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                             LauncherSection.AERIX_CLIENT -> ClientHubScreen(activity, clientOwnerPage) { clientOwnerPage = it }
                             LauncherSection.LIBRARY -> LibraryScreen(activity)
                             LauncherSection.SERVERS -> ServersScreen(activity)
+                            LauncherSection.HOST -> net.kdt.pojavlaunch.aerix.ui.screens.HostScreen(activity)
                             LauncherSection.MODPACKS -> ModpacksScreen(navigate)
                             LauncherSection.SOCIALS -> SocialsScreen(activity) { AerixNav.finishTo(LauncherSection.HOME) }
                             LauncherSection.DISCOVER, LauncherSection.DOWNLOADS -> DiscoverScreen(activity, navigate)

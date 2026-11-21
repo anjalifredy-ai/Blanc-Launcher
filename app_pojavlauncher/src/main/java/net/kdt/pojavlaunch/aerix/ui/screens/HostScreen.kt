@@ -1,0 +1,529 @@
+package net.kdt.pojavlaunch.aerix.ui.screens
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import net.kdt.pojavlaunch.R
+import net.kdt.pojavlaunch.aerix.components.AerixGhostButton
+import net.kdt.pojavlaunch.aerix.hosting.HostClient
+import net.kdt.pojavlaunch.aerix.hosting.HostStatus
+import net.kdt.pojavlaunch.aerix.hosting.HostedServer
+import net.kdt.pojavlaunch.aerix.hosting.ServerCatalog
+import net.kdt.pojavlaunch.aerix.hosting.ServerSoftware
+import net.kdt.pojavlaunch.aerix.theme.AerixSurface
+import net.kdt.pojavlaunch.aerix.theme.AerixThemeManager
+
+/** Host your own Minecraft servers on this device: sleeps when empty, wakes when someone joins. */
+@Composable
+fun HostScreen(activity: FragmentActivity) {
+    val context = LocalContext.current
+    val store = remember { HostClient.store(context) }
+    var servers by remember { mutableStateOf(emptyList<HostedServer>()) }
+    var status by remember { mutableStateOf(HostStatus()) }
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var logoRevision by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val (list, current) = withContext(Dispatchers.IO) { store.list() to HostClient.status(context) }
+            servers = list
+            status = current
+            delay(1200)
+        }
+    }
+
+    val open = servers.firstOrNull { it.id == openId }
+    if (openId != null && open != null) {
+        HostDetail(open, status, logoRevision, onLogoChanged = { logoRevision++ }, onBack = { openId = null })
+        return
+    }
+
+    AerixPage(title = "Host", subtitle = "Run Minecraft servers on this device") {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            AerixGhostButton("New server", R.drawable.aerix_ic_add, { creating = true })
+        }
+        Text(
+            "The server sleeps when nobody is online and starts again when a player joins. Friends join through a free tunnel address. Your phone must stay on and connected.",
+            color = AerixSurface.textSecondary, fontSize = 11.sp
+        )
+        if (servers.isEmpty()) {
+            Surface(shape = RoundedCornerShape(18.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("No servers yet", color = AerixSurface.textPrimary, fontWeight = FontWeight.Bold)
+                    Text("Pick Paper, Fabric, NeoForge, Forge, Quilt, Vanilla or Purpur and a version. The launcher downloads everything.", color = AerixSurface.textSecondary, fontSize = 12.sp)
+                    Button(onClick = { creating = true }) { Text("Create your first server") }
+                }
+            }
+        } else {
+            LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 18.dp)) {
+                items(servers, key = { it.id }) { s ->
+                    ServerRow(s, if (status.serverId == s.id) status else null, logoRevision) { openId = s.id }
+                }
+            }
+        }
+    }
+
+    if (creating) {
+        CreateServerDialog(
+            store = store,
+            onDismiss = { creating = false },
+            onCreated = { s ->
+                creating = false
+                HostClient.install(context, s.id)
+                openId = s.id
+            }
+        )
+    }
+}
+
+private fun stateLabel(server: HostedServer, status: HostStatus?): Pair<String, Color> = when {
+    status == null || status.state == HostStatus.OFF ->
+        if (server.installed) "Offline" to Color(0xFF8A99A6) else "Not installed" to Color(0xFFE0A84F)
+    status.state == HostStatus.RUNNING -> "Online" to Color(0xFF4CD964)
+    status.state == HostStatus.SLEEPING -> "Sleeping" to Color(0xFF6CB8FF)
+    status.state == HostStatus.STARTING -> "Starting" to Color(0xFFE0A84F)
+    status.state == HostStatus.STOPPING -> "Stopping" to Color(0xFFE0A84F)
+    status.state == HostStatus.INSTALLING -> "Installing" to Color(0xFFE0A84F)
+    else -> "Problem" to Color(0xFFFF6B6B)
+}
+
+@Composable
+private fun LogoImage(id: String, revision: Int, size: Int) {
+    val context = LocalContext.current
+    val bitmap = remember(id, revision) {
+        runCatching { BitmapFactory.decodeFile(HostClient.store(context).logoFile(id).absolutePath) }.getOrNull()
+    }
+    if (bitmap != null) {
+        Image(bitmap.asImageBitmap(), null, Modifier.size(size.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
+    } else {
+        Box(Modifier.size(size.dp).clip(RoundedCornerShape(10.dp)).background(AerixSurface.panelRaised), contentAlignment = Alignment.Center) {
+            Icon(androidx.compose.ui.res.painterResource(R.drawable.aerix_ic_terminal_outlined), null, tint = AerixSurface.textSecondary)
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(text: String, color: Color) {
+    Surface(shape = RoundedCornerShape(50), color = color.copy(alpha = 0.18f)) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).clip(RoundedCornerShape(50)).background(color))
+            Spacer(Modifier.width(6.dp))
+            Text(text, color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun ServerRow(server: HostedServer, status: HostStatus?, logoRevision: Int, onClick: () -> Unit) {
+    val (label, color) = stateLabel(server, status)
+    Surface(shape = RoundedCornerShape(18.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LogoImage(server.id, logoRevision, 52)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(server.name, color = AerixSurface.textPrimary, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${server.software.displayName} ${server.mcVersion}", color = AerixSurface.textSecondary, fontSize = 12.sp)
+                val detail = status?.message?.takeIf { it.isNotBlank() && status.state != HostStatus.RUNNING }
+                if (detail != null) Text(detail, color = AerixSurface.textMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                else if (status != null && status.players >= 0) Text("${status.players}/${status.maxPlayers} players", color = AerixSurface.textMuted, fontSize = 11.sp)
+            }
+            StatusChip(label, color)
+        }
+    }
+}
+
+// ------------------------------------------------------------------ create dialog
+
+@Composable
+private fun CreateServerDialog(store: net.kdt.pojavlaunch.aerix.hosting.ServerStore, onDismiss: () -> Unit, onCreated: (HostedServer) -> Unit) {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf("My Server") }
+    var software by remember { mutableStateOf(ServerSoftware.PAPER) }
+    var versions by remember { mutableStateOf<List<String>?>(null) }
+    var versionError by remember { mutableStateOf<String?>(null) }
+    var version by remember { mutableStateOf<String?>(null) }
+    var retry by remember { mutableIntStateOf(0) }
+    var eula by remember { mutableStateOf(false) }
+    var softwareMenu by remember { mutableStateOf(false) }
+    var versionMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(software, retry) {
+        versions = null; versionError = null; version = null
+        val result = withContext(Dispatchers.IO) { runCatching { ServerCatalog.versions(software) } }
+        versions = result.getOrNull()
+        versionError = result.exceptionOrNull()?.message ?: if (result.isFailure) "Could not load versions" else null
+        version = versions?.firstOrNull()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New server") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(name, { name = it.take(40) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Box {
+                    OutlinedButton(onClick = { softwareMenu = true }, modifier = Modifier.fillMaxWidth()) { Text("Software: ${software.displayName}") }
+                    DropdownMenu(softwareMenu, { softwareMenu = false }) {
+                        ServerSoftware.values().forEach { s ->
+                            DropdownMenuItem(text = { Column { Text(s.displayName); Text(s.blurb, fontSize = 11.sp) } }, onClick = { software = s; softwareMenu = false })
+                        }
+                    }
+                }
+                Text(software.blurb, fontSize = 11.sp, color = AerixSurface.textSecondary)
+                when {
+                    versions != null -> Box {
+                        OutlinedButton(onClick = { versionMenu = true }, modifier = Modifier.fillMaxWidth()) { Text("Version: ${version ?: "-"}") }
+                        DropdownMenu(versionMenu, { versionMenu = false }) {
+                            versions!!.forEach { v -> DropdownMenuItem(text = { Text(v) }, onClick = { version = v; versionMenu = false }) }
+                        }
+                    }
+                    versionError != null -> Column {
+                        Text(versionError!!, color = Color(0xFFFF6B6B), fontSize = 12.sp)
+                        TextButton(onClick = { retry++ }) { Text("Try again") }
+                    }
+                    else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp)); Text("Loading versions...", fontSize = 12.sp)
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(eula, { eula = it })
+                    Text("I accept the Minecraft EULA (aka.ms/MinecraftEULA)", fontSize = 12.sp, modifier = Modifier.clickable { eula = !eula })
+                }
+                if (software.needsInstaller) {
+                    Text("${software.displayName} runs an installer first. That takes a few minutes.", fontSize = 11.sp, color = AerixSurface.textMuted)
+                }
+            }
+        },
+        confirmButton = {
+            Button(enabled = eula && version != null && name.isNotBlank(), onClick = {
+                runCatching { store.create(name, software, version!!, true) }
+                    .onSuccess(onCreated)
+                    .onFailure { Toast.makeText(context, "Could not create: ${it.message}", Toast.LENGTH_LONG).show() }
+            }) { Text("Create") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+// --------------------------------------------------------------------- detail
+
+@Composable
+private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevision: Int, onLogoChanged: () -> Unit, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val store = remember { HostClient.store(context) }
+    var server by remember(initial.id) { mutableStateOf(store.get(initial.id) ?: initial) }
+    // The host process may have finished installing, so the stored copy is the truth for "installed".
+    LaunchedEffect(globalStatus.state, globalStatus.serverId) {
+        withContext(Dispatchers.IO) { store.get(initial.id) }?.let { server = server.also { s -> s.installed = it.installed } }
+    }
+    val mine = globalStatus.serverId == server.id
+    val status = if (mine) globalStatus else HostStatus()
+    val otherBusy = !mine && globalStatus.state != HostStatus.OFF && globalStatus.serverId.isNotEmpty()
+    val state = status.state
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    val (label, color) = stateLabel(server, status)
+
+    AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            LogoImage(server.id, logoRevision, 44)
+            StatusChip(label, color)
+            if (state == HostStatus.RUNNING && status.players >= 0) Text("${status.players}/${status.maxPlayers} players", color = AerixSurface.textSecondary, fontSize = 12.sp)
+        }
+        if (status.message.isNotBlank() && state != HostStatus.RUNNING) {
+            Text(status.message, color = if (state == HostStatus.ERROR) Color(0xFFFF6B6B) else AerixSurface.textSecondary, fontSize = 12.sp)
+        }
+        if (otherBusy) Text("Another server is using the host right now. Stop it first.", color = Color(0xFFE0A84F), fontSize = 12.sp)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            when {
+                !server.installed && state != HostStatus.INSTALLING ->
+                    Button(enabled = !otherBusy, onClick = { HostClient.install(context, server.id) }) { Text("Install") }
+                state == HostStatus.OFF || state == HostStatus.ERROR -> {
+                    Button(enabled = !otherBusy && server.installed, onClick = { HostClient.startNow(context, server.id) }) { Text("Start") }
+                    OutlinedButton(enabled = !otherBusy && server.installed, onClick = { HostClient.host(context, server.id) }) { Text("Host (sleep when empty)") }
+                }
+                state == HostStatus.SLEEPING -> {
+                    Button(onClick = { HostClient.startNow(context, server.id) }) { Text("Wake now") }
+                    OutlinedButton(onClick = { HostClient.stopHosting(context, server.id) }) { Text("Stop hosting") }
+                }
+                state == HostStatus.STARTING || state == HostStatus.RUNNING -> {
+                    Button(onClick = { HostClient.stopServer(context, server.id) }) { Text("Stop server") }
+                    OutlinedButton(onClick = { HostClient.stopHosting(context, server.id) }) { Text("Stop hosting") }
+                }
+                state == HostStatus.STOPPING -> Text("Stopping...", color = AerixSurface.textSecondary)
+                else -> {}
+            }
+        }
+
+        AddressCard(server, status)
+
+        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
+            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Console") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Settings") })
+        }
+        if (tab == 0) {
+            ConsoleTab(server, state, Modifier.weight(1f))
+        } else {
+            SettingsTab(server, state, logoRevision, onLogoChanged, onSaved = { server = it }, onDelete = { confirmDelete = true }, modifier = Modifier.weight(1f))
+        }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete ${server.name}?") },
+            text = { Text("The world and all files of this server are deleted from this device. This cannot be undone.") },
+            confirmButton = {
+                Button(onClick = {
+                    confirmDelete = false
+                    if (state != HostStatus.OFF) HostClient.stopHosting(context, server.id)
+                    runCatching { store.delete(server.id) }
+                    onBack()
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun AddressCard(server: HostedServer, status: HostStatus) {
+    val context = LocalContext.current
+    Surface(shape = RoundedCornerShape(14.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Join address", color = AerixSurface.textMuted, fontSize = 11.sp)
+            val shared = status.publicAddress
+            if (shared.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(shared, color = AerixSurface.textPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = {
+                        val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        cb.setPrimaryClip(ClipData.newPlainText("Minecraft server address", shared))
+                        Toast.makeText(context, "Address copied", Toast.LENGTH_SHORT).show()
+                    }) { Text("Copy") }
+                }
+            } else {
+                Text(
+                    if (!server.tunnelEnabled) "Tunnel is off. Only this device can join: localhost:${server.frontPort}"
+                    else if (status.state == HostStatus.OFF) "Press Start or Host to get a public address"
+                    else status.tunnel.ifBlank { "Connecting the tunnel..." },
+                    color = AerixSurface.textSecondary, fontSize = 12.sp
+                )
+            }
+            if (status.tunnel.isNotBlank() && shared.isNotEmpty()) Text("Tunnel: ${status.tunnel}", color = AerixSurface.textMuted, fontSize = 10.sp)
+            Text("On this device: localhost:${server.frontPort}", color = AerixSurface.textMuted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun ConsoleTab(server: HostedServer, state: String, modifier: Modifier) {
+    val context = LocalContext.current
+    var text by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf("") }
+    val scroll = rememberScrollState()
+    LaunchedEffect(server.id) {
+        while (true) {
+            text = withContext(Dispatchers.IO) { HostClient.consoleTail(context, server.id, 48 * 1024) }
+            delay(1000)
+        }
+    }
+    LaunchedEffect(text) { scroll.scrollTo(scroll.maxValue) }
+    val canSend = state == HostStatus.RUNNING || state == HostStatus.STARTING
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF0B1118), modifier = Modifier.weight(1f).fillMaxWidth()) {
+            SelectionContainer {
+                Text(
+                    text.ifEmpty { "The console shows the server's output once it starts." },
+                    color = Color(0xFFCFE3D6), fontFamily = FontFamily.Monospace, fontSize = 10.5.sp, lineHeight = 14.sp,
+                    modifier = Modifier.padding(10.dp).verticalScroll(scroll)
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                input, { input = it }, enabled = canSend, singleLine = true, modifier = Modifier.weight(1f),
+                placeholder = { Text(if (canSend) "Command (without /)" else "Start the server to send commands") },
+                keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = {
+                    if (canSend && input.isNotBlank()) { HostClient.command(context, server.id, input.removePrefix("/")); input = "" }
+                })
+            )
+            Button(enabled = canSend && input.isNotBlank(), onClick = {
+                HostClient.command(context, server.id, input.removePrefix("/")); input = ""
+            }) { Text("Send") }
+        }
+    }
+}
+
+@Composable
+private fun SettingsTab(
+    server: HostedServer, state: String, logoRevision: Int, onLogoChanged: () -> Unit,
+    onSaved: (HostedServer) -> Unit, onDelete: () -> Unit, modifier: Modifier
+) {
+    val context = LocalContext.current
+    val store = remember { HostClient.store(context) }
+    var name by remember(server.id) { mutableStateOf(server.name) }
+    var description by remember(server.id) { mutableStateOf(server.description) }
+    var onlineMode by remember(server.id) { mutableStateOf(server.onlineMode) }
+    var maxPlayers by remember(server.id) { mutableStateOf(server.maxPlayers.toString()) }
+    var ram by remember(server.id) { mutableStateOf(server.ramMb.toString()) }
+    var gamemode by remember(server.id) { mutableStateOf(server.gamemode) }
+    var difficulty by remember(server.id) { mutableStateOf(server.difficulty) }
+    var pvp by remember(server.id) { mutableStateOf(server.pvp) }
+    var whitelist by remember(server.id) { mutableStateOf(server.whitelist) }
+    var allowFlight by remember(server.id) { mutableStateOf(server.allowFlight) }
+    var commandBlocks by remember(server.id) { mutableStateOf(server.commandBlocks) }
+    var viewDistance by remember(server.id) { mutableStateOf(server.viewDistance.toString()) }
+    var seed by remember(server.id) { mutableStateOf(server.seed) }
+    var autoSleep by remember(server.id) { mutableStateOf(server.autoSleep) }
+    var idle by remember(server.id) { mutableStateOf(server.idleMinutes.toString()) }
+    var tunnel by remember(server.id) { mutableStateOf(server.tunnelEnabled) }
+    var relay by remember(server.id) { mutableStateOf(server.relayHost) }
+
+    val logoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            val source = context.contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it) }!!
+            val side = minOf(source.width, source.height)
+            val square = Bitmap.createBitmap(source, (source.width - side) / 2, (source.height - side) / 2, side, side)
+            val icon = Bitmap.createScaledBitmap(square, 64, 64, true)
+            val out = java.io.ByteArrayOutputStream()
+            icon.compress(Bitmap.CompressFormat.PNG, 100, out)
+            store.saveLogo(server.id, out.toByteArray())
+        }.onSuccess { onLogoChanged(); Toast.makeText(context, "Logo saved", Toast.LENGTH_SHORT).show() }
+            .onFailure { Toast.makeText(context, "Could not use that image", Toast.LENGTH_LONG).show() }
+    }
+
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LogoImage(server.id, logoRevision, 64)
+            OutlinedButton(onClick = { logoPicker.launch("image/*") }) { Text("Change logo") }
+        }
+        OutlinedTextField(name, { name = it.take(40) }, label = { Text("Server name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(description, { description = it.take(120) }, label = { Text("Description (shown in the server list)") }, modifier = Modifier.fillMaxWidth())
+        SettingSwitch("Online mode (premium accounts only)", "Turn off to let cracked / offline accounts join. Anyone can then use any name.", onlineMode) { onlineMode = it }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumberField("Max players", maxPlayers, Modifier.weight(1f)) { maxPlayers = it }
+            NumberField("RAM (MB)", ram, Modifier.weight(1f)) { ram = it }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChoiceButton("Gamemode", gamemode, listOf("survival", "creative", "adventure", "spectator"), Modifier.weight(1f)) { gamemode = it }
+            ChoiceButton("Difficulty", difficulty, listOf("peaceful", "easy", "normal", "hard"), Modifier.weight(1f)) { difficulty = it }
+        }
+        SettingSwitch("PvP", null, pvp) { pvp = it }
+        SettingSwitch("Whitelist", "Only players you add with /whitelist add can join.", whitelist) { whitelist = it }
+        SettingSwitch("Allow flight", null, allowFlight) { allowFlight = it }
+        SettingSwitch("Command blocks", null, commandBlocks) { commandBlocks = it }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumberField("View distance", viewDistance, Modifier.weight(1f)) { viewDistance = it }
+            OutlinedTextField(seed, { seed = it.take(40) }, label = { Text("World seed") }, singleLine = true, modifier = Modifier.weight(1f))
+        }
+        SettingSwitch("Sleep when empty", "Stops the server when nobody is online. It starts again when a player joins.", autoSleep) { autoSleep = it }
+        if (autoSleep) NumberField("Minutes empty before sleeping", idle, Modifier.fillMaxWidth()) { idle = it }
+        SettingSwitch("Public tunnel", "Gives friends an address to join without port forwarding.", tunnel) { tunnel = it }
+        if (tunnel) OutlinedTextField(relay, { relay = it.trim() }, label = { Text("Tunnel relay (bore server)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Text("Changes to most settings apply the next time the server starts.", color = AerixSurface.textMuted, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                val updated = (store.get(server.id) ?: server).also {
+                    it.name = name.trim().ifEmpty { "My Server" }
+                    it.description = description
+                    it.onlineMode = onlineMode
+                    it.maxPlayers = maxPlayers.toIntOrNull()?.coerceIn(1, 500) ?: it.maxPlayers
+                    it.ramMb = ram.toIntOrNull()?.coerceIn(512, 16384) ?: it.ramMb
+                    it.gamemode = gamemode
+                    it.difficulty = difficulty
+                    it.pvp = pvp
+                    it.whitelist = whitelist
+                    it.allowFlight = allowFlight
+                    it.commandBlocks = commandBlocks
+                    it.viewDistance = viewDistance.toIntOrNull()?.coerceIn(2, 32) ?: it.viewDistance
+                    it.seed = seed
+                    it.autoSleep = autoSleep
+                    it.idleMinutes = idle.toIntOrNull()?.coerceIn(1, 240) ?: it.idleMinutes
+                    it.tunnelEnabled = tunnel
+                    it.relayHost = relay.ifEmpty { "bore.pub" }
+                }
+                runCatching { store.save(updated) }
+                    .onSuccess {
+                        onSaved(updated)
+                        // A sleeping host reloads the list entry text and tunnel straight away.
+                        if (state == HostStatus.SLEEPING) HostClient.host(context, updated.id)
+                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                    }
+                    .onFailure { Toast.makeText(context, "Could not save: ${it.message}", Toast.LENGTH_LONG).show() }
+            }) { Text("Save settings") }
+            OutlinedButton(onClick = onDelete) { Text("Delete server") }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun SettingSwitch(title: String, hint: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = AerixSurface.textPrimary, fontSize = 13.sp)
+            if (hint != null) Text(hint, color = AerixSurface.textMuted, fontSize = 11.sp)
+        }
+        Switch(checked, onChange)
+    }
+}
+
+@Composable
+private fun NumberField(label: String, value: String, modifier: Modifier, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value, { onChange(it.filter(Char::isDigit).take(6)) }, label = { Text(label) }, singleLine = true, modifier = modifier,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+    )
+}
+
+@Composable
+private fun ChoiceButton(label: String, value: String, options: List<String>, modifier: Modifier, onChange: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) { Text("$label: $value", maxLines = 1) }
+        DropdownMenu(open, { open = false }) {
+            options.forEach { o -> DropdownMenuItem(text = { Text(o) }, onClick = { onChange(o); open = false }) }
+        }
+    }
+}

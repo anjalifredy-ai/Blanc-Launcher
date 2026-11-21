@@ -88,6 +88,8 @@ enum class LauncherSection {
     AERIX_CLIENT,
     LIBRARY,
     SERVERS,
+    /** Host your own Minecraft servers on this device. */
+    HOST,
     /** Friends, messages and parties - the social launcher, opened from Home and the rail. */
     SOCIALS,
     DISCOVER,
@@ -202,6 +204,8 @@ fun AerixNavigationRail(
                     onClick = { onNavigate(LauncherSection.LIBRARY) }, guideKey = AerixGuideState.LIBRARY)
                 RailIconItem(R.drawable.aerix_ic_sports_esports_outlined, "Servers",
                     selectedSection == LauncherSection.SERVERS, activeAccent, expandedRail, compactRail) { onNavigate(LauncherSection.SERVERS) }
+                RailIconItem(R.drawable.aerix_ic_terminal_outlined, "Host",
+                    selectedSection == LauncherSection.HOST, activeAccent, expandedRail, compactRail) { onNavigate(LauncherSection.HOST) }
                 // Socials is not a rail entry: it opens from the Home dashboard and brings its own
                 // sidebar, so it is not listed next to the launcher's own sections.
                 RailIconItem(R.drawable.aerix_ic_public, stringResource(R.string.aerix_nav_discover),
@@ -327,6 +331,12 @@ fun AerixHomeUtilityRail(
                 selectedSection == LauncherSection.SERVERS,
                 activeAccent, expandedRail, compactRail
             ) { onNavigate(LauncherSection.SERVERS) }
+            RailIconItem(
+                R.drawable.aerix_ic_terminal_outlined,
+                "Host",
+                selectedSection == LauncherSection.HOST,
+                activeAccent, expandedRail, compactRail
+            ) { onNavigate(LauncherSection.HOST) }
             RailIconItem(
                 R.drawable.aerix_ic_public,
                 stringResource(R.string.aerix_nav_discover),
