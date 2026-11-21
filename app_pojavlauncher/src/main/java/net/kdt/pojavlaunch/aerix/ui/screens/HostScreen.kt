@@ -315,9 +315,10 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
     AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             // The launcher is usually landscape: controls on the left, console/settings get the full height on the right.
+            val boxWidth = maxWidth
             if (maxWidth > 520.dp && maxWidth > maxHeight) {
                 Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Column(Modifier.width(maxWidth * 0.36f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.width(boxWidth * 0.36f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         infoBlock()
                     }
                     Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
