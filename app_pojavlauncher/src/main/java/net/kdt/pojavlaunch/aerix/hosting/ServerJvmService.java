@@ -139,7 +139,10 @@ public class ServerJvmService extends Service {
             }
             if (!log.createNewFile() && !log.isFile()) throw new IOException("cannot create the console log");
 
-            ExitActivity.setQuietExitHandler((code, isSignal) -> writeExit(exitFile, code, isSignal));
+            ExitActivity.setQuietExitHandler((code, isSignal) -> {
+                Logger.appendToLog("[Aerix] The Java program exited with code " + code + (isSignal ? " (signal)" : "") + ".\n");
+                writeExit(exitFile, code, isSignal);
+            });
 
             JREUtils.chdir(plan.workDir.getAbsolutePath());
             Logger.begin(log.getAbsolutePath());
@@ -152,8 +155,11 @@ public class ServerJvmService extends Service {
                     + " with Java " + runtime.javaVersion + ", " + ramMb + " MB\n");
             List<String> classpath = new ArrayList<>(plan.classpath);
             JavaRunner.startJvm(runtime, new ArrayList<>(plan.jvmArgs), classpath, plan.mainClass, new ArrayList<>(plan.appArgs), ramMb);
-            // startJvm only returns when the JVM could not be loaded.
-            writeExit(exitFile, -2, false);
+            // startJvm returns normally when the program's main thread and every other thread finished
+            // (the JVM shut down by itself, e.g. an installer finishing). That is a clean exit.
+            Logger.appendToLog("[Aerix] The Java program finished.\n");
+            writeExit(exitFile, 0, false);
+            Process.killProcess(Process.myPid());
         } catch (Throwable error) {
             Log.e(TAG, "Server JVM failed", error);
             try {
