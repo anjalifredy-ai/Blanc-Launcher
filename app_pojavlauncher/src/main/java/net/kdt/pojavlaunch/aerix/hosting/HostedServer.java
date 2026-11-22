@@ -26,7 +26,7 @@ public final class HostedServer {
     public boolean whitelist = false;
     public boolean allowFlight = false;
     public boolean commandBlocks = false;
-    public int viewDistance = 8;
+    public int viewDistance = 6;
     public String seed = "";
     public boolean autoSleep = true;
     public int idleMinutes = 5;
@@ -119,7 +119,13 @@ public final class HostedServer {
         p.put("allow-flight", String.valueOf(allowFlight));
         p.put("enable-command-block", String.valueOf(commandBlocks));
         p.put("view-distance", String.valueOf(viewDistance));
-        p.put("simulation-distance", String.valueOf(Math.min(viewDistance, 6)));
+        p.put("simulation-distance", String.valueOf(Math.min(viewDistance, 5)));
+        // Phone-friendly: no blocking disk writes, no watchdog kills on a slow tick, no native epoll lookup,
+        // and fewer entities sent to each player.
+        p.put("sync-chunk-writes", "false");
+        p.put("max-tick-time", "-1");
+        p.put("use-native-transport", "false");
+        p.put("entity-broadcast-range-percentage", "75");
         p.put("enable-query", "false");
         p.put("enable-rcon", "false");
         p.put("network-compression-threshold", "256");
