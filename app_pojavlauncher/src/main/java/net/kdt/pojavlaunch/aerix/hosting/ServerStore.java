@@ -110,6 +110,7 @@ public final class ServerStore {
         File props = new File(workDir, "server.properties");
         if (!props.exists()) Files.write(props.toPath(), new byte[0]);
         ServerProperties.apply(props, s.properties());
+        if (s.performancePreset) PerformancePreset.apply(workDir);
     }
 
     /** Where the server list icon is kept (the game itself reads server-icon.png from its working dir). */

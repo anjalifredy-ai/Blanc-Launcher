@@ -735,6 +735,7 @@ private fun SettingsTab(
     var commandBlocks by remember(server.id) { mutableStateOf(server.commandBlocks) }
     var viewDistance by remember(server.id) { mutableStateOf(server.viewDistance.toString()) }
     var seed by remember(server.id) { mutableStateOf(server.seed) }
+    var preset by remember(server.id) { mutableStateOf(server.performancePreset) }
     var autoSleep by remember(server.id) { mutableStateOf(server.autoSleep) }
     var idle by remember(server.id) { mutableStateOf(server.idleMinutes.toString()) }
     var tunnel by remember(server.id) { mutableStateOf(server.tunnelEnabled) }
@@ -778,6 +779,7 @@ private fun SettingsTab(
             NumberField("View distance", viewDistance, Modifier.weight(1f)) { viewDistance = it }
             OutlinedTextField(seed, { seed = it.take(40) }, label = { Text("World seed") }, singleLine = true, modifier = Modifier.weight(1f))
         }
+        SettingSwitch("Phone performance preset", "Lighter mob and entity settings for Paper (applied at every start). Turn off to edit those values yourself.", preset) { preset = it }
         SettingSwitch("Sleep when empty", "Stops the server when nobody is online. It starts again when a player joins.", autoSleep) { autoSleep = it }
         if (autoSleep) NumberField("Minutes empty before sleeping", idle, Modifier.fillMaxWidth()) { idle = it }
         SettingSwitch("Public tunnel", "Gives friends an address to join without port forwarding.", tunnel) { tunnel = it }
@@ -799,6 +801,7 @@ private fun SettingsTab(
                     it.commandBlocks = commandBlocks
                     it.viewDistance = viewDistance.toIntOrNull()?.coerceIn(2, 32) ?: it.viewDistance
                     it.seed = seed
+                    it.performancePreset = preset
                     it.autoSleep = autoSleep
                     it.idleMinutes = idle.toIntOrNull()?.coerceIn(1, 240) ?: it.idleMinutes
                     it.tunnelEnabled = tunnel
