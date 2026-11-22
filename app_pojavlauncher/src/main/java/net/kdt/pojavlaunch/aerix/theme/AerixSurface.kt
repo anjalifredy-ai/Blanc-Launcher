@@ -29,14 +29,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 object AerixSurface {
-    val canvas = Color(0xFF07131D)
+    val canvas = Color(0xFF05080F)
     // Neutral smoky glass lets the chosen wallpaper show through, without a blue colour cast.
-    val panel = Color(0x66343839)
-    val panelRaised = Color(0x80515858)
-    val panelTrack = Color(0x604A5050)
+    val panel = Color(0x990E141F)
+    val panelRaised = Color(0xB3182233)
+    val panelTrack = Color(0x8012192A)
     val panelGlassTint = Color(0x3D596362)
-    val border = Color(0x78F2F7F5)
-    val borderSoft = Color(0x48F2F7F5)
+    val border = Color(0x40C9D6FF)
+    val borderSoft = Color(0x26C9D6FF)
     val borderHighlight = Color(0xDDF5FFFA)
     val glassTint = Color(0xFF7A8582)
     val glassBlue = Color(0xFF91E9FF)
@@ -77,7 +77,7 @@ object AerixSurface {
     val scrimSoft = Color(0x33000000)
     val textPrimary = Color(0xFFF1F6FA)
     val textSecondary = Color(0xFFC8D1CF)
-    val textMuted = Color(0xFF7D909D)
+    val textMuted = Color(0xFF8493B0)
     val success = Color(0xFF73E5B0)
     val warning = Color(0xFFFFC777)
     val danger = Color(0xFFFF7189)

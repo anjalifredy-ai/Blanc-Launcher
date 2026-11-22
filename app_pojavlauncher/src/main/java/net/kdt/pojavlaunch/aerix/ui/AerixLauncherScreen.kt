@@ -173,20 +173,23 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
         // The wallpaper and the festival effects run to the edges of the display; the shell
         // itself stays clear of the camera cutout and of the system bars.
         Box(modifier = Modifier.fillMaxSize().padding(AerixWindowInsets.padding())) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                // Socials has its own navigation. The utility rail at the far right stays in the
-                // shell for every destination.
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+                // Socials has its own navigation; every other screen gets the Blanc top bar.
                 if (section != LauncherSection.SOCIALS) {
-                    AerixNavigationRail(
+                    BlancTopBar(
                         selectedSection = section,
                         onNavigate = navigate,
-                        onCreateInstance = { AerixNav.navigate(LauncherSection.CREATE_INSTANCE) }
+                        onCreateInstance = { AerixNav.navigate(LauncherSection.CREATE_INSTANCE) },
+                        onOpenProfile = {
+                            SocialsNavigation.requestMyProfile()
+                            navigate(LauncherSection.SOCIALS)
+                        }
                     )
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
+                        .fillMaxWidth()
                 ) {
                     AnimatedContent(
                         targetState = section,
@@ -261,25 +264,13 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                         )
                     }
                 }
-                // Keep Home's utility shortcuts pinned to the launcher shell so they remain
-                // available while any destination from this rail is open.
-                AerixHomeUtilityRail(
-                    selectedSection = section,
-                    onNavigate = navigate,
-                    onOpenProfile = {
-                        SocialsNavigation.requestMyProfile()
-                        navigate(LauncherSection.SOCIALS)
-                    },
-                    onQuickTools = { navigate(LauncherSection.QUICK_TOOLS) },
-                    onInstances = { navigate(LauncherSection.INSTANCE_SELECTOR) }
-                )
             }
 
             FestivalTitleText(
                 festivals = festivals,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = AerixSpacing.xs, end = AerixSpacing.lg)
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = AerixSpacing.xs, end = AerixSpacing.lg)
             )
 
             // Live join toast ("Marie started 1.21.4 · Join?") from Supabase Realtime presence.
