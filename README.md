@@ -1,11 +1,9 @@
-# Aerix Launcher — Minecraft: Java Edition on Android
+# Blanc Launcher — Minecraft: Java Edition on Android
+
+
 
 <p align="center">
-  <img src="assets/aerix-launcher-logo.png" alt="Aerix Launcher’s new hand-drawn A logo" width="240" />
-</p>
-
-<p align="center">
-  <strong>✨ 🚀 AERIX LAUNCHER</strong><br>
+  <strong>✨ 🚀Blanc launcher</strong><br>
   <em>Minecraft: Java Edition on Android</em><br>
   Hand-built. Privately kept. Tested on real phones. Maintained by its owner.
 </p>
