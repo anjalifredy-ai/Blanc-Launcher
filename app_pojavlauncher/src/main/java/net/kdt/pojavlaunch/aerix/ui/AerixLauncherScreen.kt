@@ -196,7 +196,7 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                     ) { target ->
                         when (target) {
                             LauncherSection.OTHER_RELEASES -> net.kdt.pojavlaunch.aerix.ui.screens.OtherReleasesScreen(activity, navigate)
-                            LauncherSection.HOME -> HomeScreen(activity, navigate)
+                            LauncherSection.HOME -> net.kdt.pojavlaunch.aerix.ui.screens.EditionHome(activity, navigate)
                             LauncherSection.QUICK_TOOLS -> QuickToolsScreen(activity, navigate)
                             LauncherSection.INSTANCE_SELECTOR -> InstanceSelectorScreen(activity, navigate)
                             LauncherSection.AERIX_CLIENT -> ClientHubScreen(activity, clientOwnerPage) { clientOwnerPage = it }
