@@ -44,6 +44,7 @@ public final class BoreTunnel {
     private final int localPort;
     private final Listener listener;
     private volatile int preferredPort;
+    private volatile String secret = "";
     private volatile boolean running;
     private volatile Socket control;
     private Thread thread;
@@ -168,11 +169,53 @@ public final class BoreTunnel {
         proxy.start();
     }
 
+    /** Password of a private relay (bore --secret). Empty for public relays. */
+    public void setSecret(String secret) {
+        this.secret = secret == null ? "" : secret;
+    }
+
+    private static final Pattern CHALLENGE = Pattern.compile("^\\{\"Challenge\":\"([0-9a-fA-F-]{36})\"\\}$");
+
     private Socket connect() throws IOException {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress(relayHost, controlPort), 5000);
         socket.setTcpNoDelay(true);
+        if (!secret.isEmpty()) {
+            try {
+                authenticate(socket);
+            } catch (IOException | RuntimeException e) {
+                closeQuietly(socket);
+                throw e instanceof IOException ? (IOException) e : new IOException(e);
+            }
+        }
         return socket;
+    }
+
+    /** bore's handshake: the server sends a random UUID, the client answers with HMAC-SHA256 of its 16 bytes. */
+    private void authenticate(Socket socket) throws IOException {
+        socket.setSoTimeout(10000);
+        String frame = readFrame(socket.getInputStream());
+        Matcher challenge = frame == null ? null : CHALLENGE.matcher(frame);
+        if (challenge == null || !challenge.matches()) throw new IOException("the relay did not ask for a secret");
+        writeFrame(socket.getOutputStream(), "{\"Authenticate\":\"" + answer(secret, challenge.group(1)) + "\"}");
+        socket.setSoTimeout(0);
+    }
+
+    static String answer(String secret, String challengeUuid) {
+        try {
+            byte[] key = java.security.MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8));
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(key, "HmacSHA256"));
+            String hex = challengeUuid.replace("-", "");
+            byte[] bytes = new byte[16];
+            for (int i = 0; i < 16; i++) bytes[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+            byte[] tag = mac.doFinal(bytes);
+            StringBuilder out = new StringBuilder();
+            for (byte b : tag) out.append(String.format("%02x", b));
+            return out.toString();
+        } catch (java.security.GeneralSecurityException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     static void writeFrame(OutputStream out, String json) throws IOException {

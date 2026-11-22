@@ -32,6 +32,8 @@ public final class HostedServer {
     public int idleMinutes = 5;
     public boolean tunnelEnabled = true;
     public String relayHost = "bore.pub";
+    /** Password of a private relay; empty for public ones. */
+    public String relaySecret = "";
     /** Last public port the relay gave us; asked for again so the address stays the same. */
     public int publicPort = 0;
     /** Lighter Paper/Spigot/Bukkit config values for a phone (see PerformancePreset). */
@@ -65,6 +67,7 @@ public final class HostedServer {
         o.addProperty("idleMinutes", idleMinutes);
         o.addProperty("tunnelEnabled", tunnelEnabled);
         o.addProperty("relayHost", relayHost);
+        o.addProperty("relaySecret", relaySecret);
         o.addProperty("publicPort", publicPort);
         o.addProperty("performancePreset", performancePreset);
         o.addProperty("eulaAccepted", eulaAccepted);
@@ -98,6 +101,7 @@ public final class HostedServer {
         s.idleMinutes = num(o, "idleMinutes", s.idleMinutes);
         s.tunnelEnabled = bool(o, "tunnelEnabled", s.tunnelEnabled);
         s.relayHost = str(o, "relayHost", s.relayHost);
+        s.relaySecret = str(o, "relaySecret", s.relaySecret);
         s.publicPort = num(o, "publicPort", s.publicPort);
         s.performancePreset = bool(o, "performancePreset", s.performancePreset);
         s.eulaAccepted = bool(o, "eulaAccepted", s.eulaAccepted);

@@ -740,6 +740,7 @@ private fun SettingsTab(
     var idle by remember(server.id) { mutableStateOf(server.idleMinutes.toString()) }
     var tunnel by remember(server.id) { mutableStateOf(server.tunnelEnabled) }
     var relay by remember(server.id) { mutableStateOf(server.relayHost) }
+    var relaySecret by remember(server.id) { mutableStateOf(server.relaySecret) }
 
     val logoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -783,7 +784,8 @@ private fun SettingsTab(
         SettingSwitch("Sleep when empty", "Stops the server when nobody is online. It starts again when a player joins.", autoSleep) { autoSleep = it }
         if (autoSleep) NumberField("Minutes empty before sleeping", idle, Modifier.fillMaxWidth()) { idle = it }
         SettingSwitch("Public tunnel", "Gives friends an address to join without port forwarding.", tunnel) { tunnel = it }
-        if (tunnel) OutlinedTextField(relay, { relay = it.trim() }, label = { Text("Tunnel relay (bore server)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        if (tunnel) OutlinedTextField(relay, { relay = it.trim() }, label = { Text("Tunnel relay (bore server, e.g. your Mumbai VPS)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        if (tunnel) OutlinedTextField(relaySecret, { relaySecret = it.trim() }, label = { Text("Relay secret (only for a private relay)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         Text("Changes to most settings apply the next time the server starts.", color = AerixSurface.textMuted, fontSize = 11.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
@@ -806,6 +808,7 @@ private fun SettingsTab(
                     it.idleMinutes = idle.toIntOrNull()?.coerceIn(1, 240) ?: it.idleMinutes
                     it.tunnelEnabled = tunnel
                     it.relayHost = relay.ifEmpty { "bore.pub" }
+                    it.relaySecret = relaySecret
                 }
                 runCatching { store.save(updated) }
                     .onSuccess {

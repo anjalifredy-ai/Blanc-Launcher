@@ -145,7 +145,8 @@ public class HostService extends Service implements SleepListener.Host {
                 return;
             }
             boolean samePort = server != null && listener != null && server.id.equals(id) && server.frontPort == loaded.frontPort
-                    && server.tunnelEnabled == loaded.tunnelEnabled && server.relayHost.equals(loaded.relayHost);
+                    && server.tunnelEnabled == loaded.tunnelEnabled && server.relayHost.equals(loaded.relayHost)
+                    && server.relaySecret.equals(loaded.relaySecret);
             server = loaded;
             status.serverId = id;
             status.maxPlayers = loaded.maxPlayers;
@@ -201,6 +202,7 @@ public class HostService extends Service implements SleepListener.Host {
                     }
                 }
             });
+            tunnel.setSecret(s.relaySecret);
             tunnel.start();
         }
     }
