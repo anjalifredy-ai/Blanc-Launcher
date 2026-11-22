@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -108,26 +109,50 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
 
 @Composable
 private fun BedrockHome(detection: BedrockDetector.Result) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val context = LocalContext.current
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Minecraft Bedrock", color = AerixSurface.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Surface(shape = RoundedCornerShape(16.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Your copy was found", color = Color(0xFF4CD964), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                Text("Version ${detection.versionName} (build ${detection.versionCode}), installed from Google Play", color = AerixSurface.textSecondary, fontSize = 12.sp)
+        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
+            listOf("Home", "Browse", "Servers").forEachIndexed { i, t ->
+                Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t, fontSize = 13.sp) })
             }
         }
-        BedrockVersionsCard()
-        for ((title, text) in listOf(
-            "Resource packs" to "Browse and install Bedrock resource packs.",
-            "Shaders" to "Browse and install Bedrock shaders / render packs."
-        )) {
-            Surface(shape = RoundedCornerShape(16.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(title, color = AerixSurface.textPrimary, fontWeight = FontWeight.SemiBold)
-                    Text(text, color = AerixSurface.textSecondary, fontSize = 12.sp)
-                    Text("Not built yet", color = AerixSurface.textMuted, fontSize = 11.sp)
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            when (tab) {
+                0 -> {
+                    Surface(shape = RoundedCornerShape(16.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Your copy was found", color = Color(0xFF4CD964), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text("Minecraft ${detection.versionName} (build ${detection.versionCode}), installed from Google Play", color = AerixSurface.textSecondary, fontSize = 12.sp)
+                            Button(onClick = {
+                                // Opens the installed Minecraft exactly as its own icon would. Nothing in it is changed.
+                                val intent = context.packageManager.getLaunchIntentForPackage(BedrockDetector.PACKAGE)
+                                if (intent != null) context.startActivity(intent)
+                                else Toast.makeText(context, "Could not open Minecraft", Toast.LENGTH_LONG).show()
+                            }) { Text("Play") }
+                        }
+                    }
+                    BedrockVersionsCard()
+                }
+                1 -> {
+                    BedrockInfoCard("Resource packs", "Browsing and installing Bedrock resource packs is not built yet. Bedrock has no open pack catalogue like Modrinth, so a legal source has to be chosen first.")
+                    BedrockInfoCard("Shaders", "Same as resource packs: not built yet.")
+                }
+                else -> {
+                    BedrockInfoCard("Bedrock servers", "Not built yet. The official Bedrock server does not run on phones. Two ways that can work: a Bedrock-compatible server written in Java, or a Java server (Paper) with the Geyser plugin so Bedrock players can join it. Bedrock uses UDP, which the current free tunnel does not carry, so friends outside your Wi-Fi need another tunnel.")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BedrockInfoCard(title: String, text: String) {
+    Surface(shape = RoundedCornerShape(16.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, color = AerixSurface.textPrimary, fontWeight = FontWeight.SemiBold)
+            Text(text, color = AerixSurface.textSecondary, fontSize = 12.sp)
         }
     }
 }
