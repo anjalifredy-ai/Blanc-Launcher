@@ -18,6 +18,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import net.kdt.pojavlaunch.aerix.bedrock.BedrockDetector
+import net.kdt.pojavlaunch.aerix.bedrock.BedrockVersions
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.LazyColumn
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.kdt.pojavlaunch.aerix.theme.AerixSurface
 import net.kdt.pojavlaunch.aerix.ui.LauncherSection
 
@@ -109,8 +116,8 @@ private fun BedrockHome(detection: BedrockDetector.Result) {
                 Text("Version ${detection.versionName} (build ${detection.versionCode}), installed from Google Play", color = AerixSurface.textSecondary, fontSize = 12.sp)
             }
         }
+        BedrockVersionsCard()
         for ((title, text) in listOf(
-            "Versions" to "Run more than one Bedrock version inside the launcher. Only versions you own and import yourself.",
             "Resource packs" to "Browse and install Bedrock resource packs.",
             "Shaders" to "Browse and install Bedrock shaders / render packs."
         )) {
@@ -121,6 +128,53 @@ private fun BedrockHome(detection: BedrockDetector.Result) {
                     Text("Not built yet", color = AerixSurface.textMuted, fontSize = 11.sp)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BedrockVersionsCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var versions by remember { mutableStateOf(emptyList<BedrockVersions.Version>()) }
+    var busy by remember { mutableStateOf(false) }
+    var refresh by remember { mutableIntStateOf(0) }
+    LaunchedEffect(refresh) { versions = withContext(Dispatchers.IO) { BedrockVersions.list(context) } }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        busy = true
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { BedrockVersions.importFrom(context, uri) } }
+            busy = false
+            r.onSuccess { Toast.makeText(context, "Added Minecraft ${it.versionName}", Toast.LENGTH_LONG).show(); refresh++ }
+                .onFailure { Toast.makeText(context, it.message ?: "Could not add that file", Toast.LENGTH_LONG).show() }
+        }
+    }
+    Surface(shape = RoundedCornerShape(16.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Versions", color = AerixSurface.textPrimary, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Add Bedrock builds you already own (an .apk, or an .xapk / .apks bundle). A build is accepted only if it is signed by the same key as the Minecraft from Google Play on this phone.",
+                color = AerixSurface.textSecondary, fontSize = 12.sp
+            )
+            Button(enabled = !busy, onClick = { picker.launch(arrayOf("*/*")) }) { Text(if (busy) "Checking..." else "Add a version from a file") }
+            if (versions.isEmpty()) {
+                Text("No versions added yet.", color = AerixSurface.textMuted, fontSize = 11.sp)
+            }
+            versions.forEach { v ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Minecraft ${v.versionName}", color = AerixSurface.textPrimary, fontSize = 13.sp)
+                        Text("build ${v.versionCode} - ${v.sizeBytes / (1024 * 1024)} MB", color = AerixSurface.textMuted, fontSize = 10.sp)
+                    }
+                    TextButton(onClick = {
+                        runCatching { BedrockVersions.delete(v) }
+                            .onFailure { Toast.makeText(context, "Could not remove: ${it.message}", Toast.LENGTH_LONG).show() }
+                        refresh++
+                    }) { Text("Remove", fontSize = 12.sp) }
+                }
+            }
+            Text("Running these builds inside the launcher is not built yet.", color = AerixSurface.textMuted, fontSize = 11.sp)
         }
     }
 }
