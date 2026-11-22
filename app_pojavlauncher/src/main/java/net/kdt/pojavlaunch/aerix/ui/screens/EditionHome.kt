@@ -157,7 +157,20 @@ private fun BedrockVersionsCard() {
                 "Add Bedrock builds you already own (an .apk, or an .xapk / .apks bundle). A build is accepted only if it is signed by the same key as the Minecraft from Google Play on this phone.",
                 color = AerixSurface.textSecondary, fontSize = 12.sp
             )
-            Button(enabled = !busy, onClick = { picker.launch(arrayOf("*/*")) }) { Text(if (busy) "Checking..." else "Add a version from a file") }
+            val installed = remember { BedrockDetector.detect(context) }
+            if (installed.allowed() && versions.none { it.versionCode == installed.versionCode }) {
+                Button(enabled = !busy, onClick = {
+                    busy = true
+                    scope.launch {
+                        val r = withContext(Dispatchers.IO) { runCatching { BedrockVersions.saveInstalled(context) } }
+                        busy = false
+                        r.onSuccess { Toast.makeText(context, "Saved Minecraft ${it.versionName}", Toast.LENGTH_LONG).show(); refresh++ }
+                            .onFailure { Toast.makeText(context, it.message ?: "Could not save", Toast.LENGTH_LONG).show() }
+                    }
+                }) { Text(if (busy) "Saving..." else "Save the installed version (${installed.versionName})") }
+                Text("Keeps this version in the launcher, so it is still here after Google Play updates Minecraft.", color = AerixSurface.textMuted, fontSize = 11.sp)
+            }
+            OutlinedButton(enabled = !busy, onClick = { picker.launch(arrayOf("*/*")) }) { Text(if (busy) "Checking..." else "Add another version from a file") }
             if (versions.isEmpty()) {
                 Text("No versions added yet.", color = AerixSurface.textMuted, fontSize = 11.sp)
             }

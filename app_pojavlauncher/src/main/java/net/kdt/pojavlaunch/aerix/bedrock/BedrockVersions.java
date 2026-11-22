@@ -78,6 +78,43 @@ public final class BedrockVersions {
         if (!v.dir.delete()) throw new IOException("Could not delete " + v.dir.getName());
     }
 
+    /**
+     * Keeps a copy of the Minecraft that is installed from Google Play right now, so the player still has this
+     * version after Play updates the app. It is the player's own installed copy, copied on the same phone.
+     */
+    public static Version saveInstalled(Context context) throws IOException {
+        BedrockDetector.Result installed = BedrockDetector.detect(context);
+        if (!installed.allowed()) throw new IOException("Install Minecraft from Google Play first");
+        android.content.pm.ApplicationInfo app;
+        try {
+            app = context.getPackageManager().getApplicationInfo(BedrockDetector.PACKAGE, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new IOException("Minecraft is not installed");
+        }
+        String id = String.valueOf(installed.versionCode);
+        File dest = new File(root(context), id);
+        if (dest.exists()) throw new IOException("Version " + installed.versionName + " is already saved");
+        if (!dest.mkdirs()) throw new IOException("Could not create the version folder");
+        try {
+            copy(new java.io.FileInputStream(app.sourceDir), new File(dest, "base.apk"));
+            if (app.splitSourceDirs != null) {
+                for (String split : app.splitSourceDirs) {
+                    copy(new java.io.FileInputStream(split), new File(dest, new File(split).getName()));
+                }
+            }
+            JsonObject meta = new JsonObject();
+            meta.addProperty("versionName", installed.versionName);
+            meta.addProperty("versionCode", installed.versionCode);
+            Files.write(new File(dest, "version.json").toPath(), meta.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            File[] left = dest.listFiles();
+            if (left != null) for (File f : left) f.delete();
+            dest.delete();
+            throw e;
+        }
+        return new Version(id, installed.versionName, installed.versionCode, dest, 0);
+    }
+
     /** Imports a .apk, or a bundle (.xapk / .apks / .zip) holding the split APKs. */
     public static Version importFrom(Context context, Uri uri) throws IOException {
         BedrockDetector.Result installed = BedrockDetector.detect(context);
