@@ -56,6 +56,10 @@ public final class SleepListener {
     private Thread acceptThread;
     private ExecutorService pool;
     private final AtomicInteger open = new AtomicInteger();
+    private final AtomicInteger relays = new AtomicInteger();
+
+    /** Connections currently being passed through to the real server (players, mostly). */
+    public int activeRelays() { return relays.get(); }
 
     public SleepListener(int port, Host host) {
         this.port = port;
@@ -139,7 +143,13 @@ public final class SleepListener {
                 upstream = null;
             }
             if (upstream != null) {
-                pipe(client, upstream);
+                client.setKeepAlive(true);
+                relays.incrementAndGet();
+                try {
+                    pipe(client, upstream);
+                } finally {
+                    relays.decrementAndGet();
+                }
                 return;
             }
             // The real server stopped answering: fall through and behave as a sleeping server.

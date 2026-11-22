@@ -38,13 +38,16 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.kdt.pojavlaunch.R
 import net.kdt.pojavlaunch.aerix.components.AerixGhostButton
 import net.kdt.pojavlaunch.aerix.hosting.HostClient
 import net.kdt.pojavlaunch.aerix.hosting.HostStatus
 import net.kdt.pojavlaunch.aerix.hosting.HostedServer
+import net.kdt.pojavlaunch.aerix.hosting.Modrinth
 import net.kdt.pojavlaunch.aerix.hosting.ServerCatalog
+import net.kdt.pojavlaunch.aerix.hosting.ServerFiles
 import net.kdt.pojavlaunch.aerix.hosting.ServerSoftware
 import net.kdt.pojavlaunch.aerix.theme.AerixSurface
 import net.kdt.pojavlaunch.aerix.theme.AerixThemeManager
@@ -321,13 +324,19 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
     }
     val tabHeader: @Composable () -> Unit = {
         TabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Console") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Settings") })
+            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Console", fontSize = 12.sp, maxLines = 1) })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Files", fontSize = 12.sp, maxLines = 1) })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(if (Modrinth.usesPlugins(server.software)) "Plugins" else "Mods", fontSize = 12.sp, maxLines = 1) })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Settings", fontSize = 12.sp, maxLines = 1) })
         }
     }
     val tabBody: @Composable (Modifier) -> Unit = { mod ->
         if (tab == 0) {
             ConsoleTab(server, status, mod)
+        } else if (tab == 1) {
+            FilesTab(server, mod)
+        } else if (tab == 2) {
+            AddonsTab(server, mod)
         } else {
             SettingsTab(server, state, logoRevision, onLogoChanged, onSaved = { server = it }, onDelete = { confirmDelete = true }, modifier = mod)
         }
@@ -481,6 +490,227 @@ private fun ConsoleTab(server: HostedServer, status: HostStatus, modifier: Modif
                 })
             )
             Button(enabled = canSend && input.isNotBlank(), onClick = { send(input); input = "" }) { Text("Send") }
+        }
+    }
+}
+
+@Composable
+private fun FilesTab(server: HostedServer, modifier: Modifier) {
+    val context = LocalContext.current
+    val root = remember(server.id) { HostClient.store(context).dir(server.id) }
+    val scope = rememberCoroutineScope()
+    var dir by rememberSaveable(server.id) { mutableStateOf("") }
+    var entries by remember { mutableStateOf<List<ServerFiles.Entry>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var refresh by remember { mutableIntStateOf(0) }
+    var editing by remember { mutableStateOf<String?>(null) }
+    var editText by remember { mutableStateOf("") }
+    var deleting by remember { mutableStateOf<String?>(null) }
+    var newFolder by remember { mutableStateOf(false) }
+    var folderName by remember { mutableStateOf("") }
+
+    LaunchedEffect(dir, refresh) {
+        val result = withContext(Dispatchers.IO) { runCatching { ServerFiles.list(root, dir) } }
+        entries = result.getOrDefault(emptyList())
+        error = result.exceptionOrNull()?.message
+    }
+    fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    var name = "upload"
+                    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                        val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (i >= 0 && c.moveToFirst()) name = c.getString(i) ?: name
+                    }
+                    context.contentResolver.openInputStream(uri)!!.use { ServerFiles.importStream(root, dir, name, it) }
+                    name
+                }
+            }
+            result.onSuccess { toast("Added $it"); refresh++ }.onFailure { toast("Could not add the file: ${it.message}") }
+        }
+    }
+
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("/" + dir, color = AerixSurface.textSecondary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (dir.isNotEmpty()) OutlinedButton(onClick = { dir = ServerFiles.parent(dir) }) { Text("Up", fontSize = 12.sp) }
+            OutlinedButton(onClick = { picker.launch("*/*") }) { Text("Upload", fontSize = 12.sp) }
+            OutlinedButton(onClick = { folderName = ""; newFolder = true }) { Text("New folder", fontSize = 12.sp) }
+            OutlinedButton(onClick = { refresh++ }) { Text("Refresh", fontSize = 12.sp) }
+        }
+        if (error != null) Text(error!!, color = Color(0xFFFF6B6B), fontSize = 12.sp)
+        Surface(shape = RoundedCornerShape(12.dp), color = AerixSurface.panel, modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (entries.isEmpty()) {
+                Box(Modifier.fillMaxSize().padding(14.dp)) { Text("Nothing here yet. Start the server once to create its files.", color = AerixSurface.textMuted, fontSize = 12.sp) }
+            } else {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 4.dp)) {
+                    items(entries, key = { it.name }) { e ->
+                        val path = ServerFiles.join(dir, e.name)
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                when {
+                                    e.directory -> dir = path
+                                    ServerFiles.isEditable(e.name, e.size) -> scope.launch {
+                                        val r = withContext(Dispatchers.IO) { runCatching { ServerFiles.readText(root, path) } }
+                                        r.onSuccess { editText = it; editing = path }.onFailure { toast("Could not open: ${it.message}") }
+                                    }
+                                    else -> toast("${e.name} cannot be edited here (${e.size / 1024} KB)")
+                                }
+                            }.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text((if (e.directory) "> " else "") + e.name, color = AerixSurface.textPrimary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (!e.directory) Text(if (e.size >= 1024 * 1024) "${e.size / (1024 * 1024)} MB" else "${e.size / 1024} KB", color = AerixSurface.textMuted, fontSize = 10.sp)
+                            }
+                            TextButton(onClick = { deleting = path }) { Text("Delete", fontSize = 12.sp) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    editing?.let { path ->
+        AlertDialog(
+            onDismissRequest = { editing = null },
+            title = { Text(path.substringAfterLast('/'), fontSize = 15.sp) },
+            text = {
+                OutlinedTextField(
+                    editText, { editText = it },
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp, max = 360.dp)
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val r = runCatching { ServerFiles.writeText(root, path, editText) }
+                    r.onSuccess { toast("Saved. Restart the server to apply."); editing = null; refresh++ }.onFailure { toast("Could not save: ${it.message}") }
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } }
+        )
+    }
+    deleting?.let { path ->
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Delete ${path.substringAfterLast('/')}?") },
+            text = { Text("This cannot be undone.") },
+            confirmButton = {
+                Button(onClick = {
+                    runCatching { ServerFiles.delete(root, path) }.onFailure { toast("Could not delete: ${it.message}") }
+                    deleting = null; refresh++
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } }
+        )
+    }
+    if (newFolder) {
+        AlertDialog(
+            onDismissRequest = { newFolder = false },
+            title = { Text("New folder") },
+            text = { OutlinedTextField(folderName, { folderName = it }, singleLine = true, label = { Text("Name") }) },
+            confirmButton = {
+                Button(onClick = {
+                    runCatching { ServerFiles.mkdir(root, dir, folderName) }.onFailure { toast("Could not create: ${it.message}") }
+                    newFolder = false; refresh++
+                }) { Text("Create") }
+            },
+            dismissButton = { TextButton(onClick = { newFolder = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun AddonsTab(server: HostedServer, modifier: Modifier) {
+    val context = LocalContext.current
+    val software = server.software
+    val kind = if (Modrinth.usesPlugins(software)) "plugin" else "mod"
+    if (!Modrinth.supported(software)) {
+        Column(modifier.fillMaxWidth()) {
+            Text("Vanilla servers cannot load plugins or mods. Create a Paper server for plugins, or Fabric / NeoForge / Forge / Quilt for mods.", color = AerixSurface.textSecondary, fontSize = 12.sp)
+        }
+        return
+    }
+    val scope = rememberCoroutineScope()
+    val contentDir = remember(server.id) { ServerFiles.contentDir(HostClient.store(context).dir(server.id), software) }
+    var query by remember { mutableStateOf("") }
+    var searchKey by remember { mutableIntStateOf(0) }
+    var hits by remember { mutableStateOf<List<Modrinth.Hit>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var installingId by remember { mutableStateOf<String?>(null) }
+    var installed by remember { mutableStateOf(emptyList<String>()) }
+    var refresh by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(searchKey) {
+        hits = null; error = null
+        val r = withContext(Dispatchers.IO) { runCatching { Modrinth.search(software, server.mcVersion, query) } }
+        hits = r.getOrNull() ?: emptyList()
+        error = r.exceptionOrNull()?.let { "Could not load the list: ${it.message}" }
+    }
+    LaunchedEffect(refresh) {
+        installed = withContext(Dispatchers.IO) { contentDir.listFiles { f -> f.isFile && f.name.endsWith(".jar") }?.map { it.name }?.sorted() ?: emptyList() }
+    }
+
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                query, { query = it }, singleLine = true, modifier = Modifier.weight(1f),
+                placeholder = { Text("Search ${kind}s for ${server.mcVersion}") },
+                keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searchKey++ })
+            )
+            Button(onClick = { searchKey++ }) { Text("Search") }
+        }
+        if (installed.isNotEmpty()) {
+            Text("Installed (${installed.size}) - restart the server to apply changes", color = AerixSurface.textMuted, fontSize = 11.sp)
+            LazyColumn(Modifier.heightIn(max = 96.dp).fillMaxWidth()) {
+                items(installed, key = { it }) { name ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(name, color = AerixSurface.textPrimary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            runCatching { java.io.File(contentDir, name).delete() }
+                            refresh++
+                        }) { Text("Remove", fontSize = 11.sp) }
+                    }
+                }
+            }
+        }
+        if (error != null) Text(error!!, color = Color(0xFFFF6B6B), fontSize = 12.sp)
+        if (hits == null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("Loading...", fontSize = 12.sp)
+            }
+        } else if (hits!!.isEmpty() && error == null) {
+            Text("Nothing found for ${server.mcVersion}. Try another search.", color = AerixSurface.textSecondary, fontSize = 12.sp)
+        }
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(hits ?: emptyList(), key = { it.id }) { hit ->
+                Surface(shape = RoundedCornerShape(12.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(hit.title, color = AerixSurface.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text("${hit.author} - ${hit.downloads} downloads", color = AerixSurface.textMuted, fontSize = 10.sp)
+                            Text(hit.description, color = AerixSurface.textSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        Button(enabled = installingId == null, onClick = {
+                            installingId = hit.id
+                            scope.launch {
+                                val r = withContext(Dispatchers.IO) { runCatching { Modrinth.install(contentDir, software, server.mcVersion, hit.id) } }
+                                installingId = null
+                                r.onSuccess {
+                                    Toast.makeText(context, if (it.isEmpty()) "Already installed" else "Installed ${it.joinToString()}. Restart the server.", Toast.LENGTH_LONG).show()
+                                    refresh++
+                                }.onFailure { Toast.makeText(context, "Install failed: ${it.message}", Toast.LENGTH_LONG).show() }
+                            }
+                        }) { Text(if (installingId == hit.id) "..." else "Install", fontSize = 12.sp) }
+                    }
+                }
+            }
         }
     }
 }

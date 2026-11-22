@@ -27,6 +27,10 @@ public final class LaunchPlanner {
         plan.jvmArgs.add("-Dterminal.ansi=false");
         // The Java on Android is not an official vendor build, and Paper (and its forks) refuse to start on one.
         plan.jvmArgs.add("-DPaper.IgnoreJavaVersion=true");
+        // Faster start and lighter on a phone: C1 compiler only, one GC thread, no perf-data file.
+        plan.jvmArgs.add("-XX:TieredStopAtLevel=1");
+        plan.jvmArgs.add("-XX:+UseSerialGC");
+        plan.jvmArgs.add("-XX:-UsePerfData");
     }
 
     /** The plan for running the installed server in [dir]. Throws if the install is missing or unrecognised. */

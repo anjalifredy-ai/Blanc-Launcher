@@ -588,7 +588,10 @@ public class HostService extends Service implements SleepListener.Host {
                         status.players = r.online;
                         if (r.max > 0) status.maxPlayers = r.max;
                     }
-                    if (r.online >= 0 && s.autoSleep && idle.shouldSleep(r.online, now, Math.max(1, s.idleMinutes) * 60_000L)) {
+                    // Anyone connected through the front port counts as a player, even if the status reply was odd.
+                    int connected = listener == null ? 0 : listener.activeRelays();
+                    if (connected > 0) idle.reset();
+                    if (connected == 0 && r.online >= 0 && s.autoSleep && idle.shouldSleep(r.online, now, Math.max(1, s.idleMinutes) * 60_000L)) {
                         stopServer(true);
                     }
                 }

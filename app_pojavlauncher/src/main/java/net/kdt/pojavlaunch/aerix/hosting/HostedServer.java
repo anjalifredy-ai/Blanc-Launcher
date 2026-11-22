@@ -119,7 +119,7 @@ public final class HostedServer {
         p.put("allow-flight", String.valueOf(allowFlight));
         p.put("enable-command-block", String.valueOf(commandBlocks));
         p.put("view-distance", String.valueOf(viewDistance));
-        p.put("simulation-distance", String.valueOf(Math.min(viewDistance, 10)));
+        p.put("simulation-distance", String.valueOf(Math.min(viewDistance, 6)));
         p.put("enable-query", "false");
         p.put("enable-rcon", "false");
         p.put("network-compression-threshold", "256");
