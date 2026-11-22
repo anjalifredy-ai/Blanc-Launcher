@@ -49,7 +49,7 @@ internal object LauncherUpdater {
         phase = LauncherUpdatePhase.CHECKING; error = ""
         job = scope.launch {
             try {
-                val response = open("https://api.github.com/repos/entitybrian69-bit/Aerix-launcher/releases/latest")
+                val response = open("https://api.github.com/repos/anjalifredy-ai/Blanc-Launcher/releases/latest")
                 val result = try {
                     if (response.responseCode == 404) null else {
                         require(response.responseCode == 200) { "GitHub returned HTTP ${response.responseCode}. Please try again later." }

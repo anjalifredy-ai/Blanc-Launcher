@@ -111,7 +111,6 @@ import net.kdt.pojavlaunch.aerix.ui.screens.ModpacksScreen
 fun AerixLauncherScreen(activity: FragmentActivity) {
     AerixNav.init()
     net.kdt.pojavlaunch.aerix.ui.screens.FirstRunNotificationPopupHost(activity)
-    net.kdt.pojavlaunch.aerix.ui.screens.LauncherUpdateNoticeHost(activity)
     val section = AerixNav.section
     var clientOwnerPage by rememberSaveable { mutableStateOf(ClientOwnerPage.OWNERS) }
     val navigate: (LauncherSection) -> Unit = { target ->
