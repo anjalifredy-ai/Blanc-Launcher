@@ -476,7 +476,7 @@ private fun ConsoleTab(server: HostedServer, status: HostStatus, modifier: Modif
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("list", "save-all", "difficulty", "whitelist list").forEach { c ->
+            listOf("list", "tps", "save-all", "difficulty").forEach { c ->
                 AssistChip(onClick = { if (c == "difficulty") input = "difficulty " else send(c) }, enabled = canSend, label = { Text(c, fontSize = 11.sp) })
             }
         }

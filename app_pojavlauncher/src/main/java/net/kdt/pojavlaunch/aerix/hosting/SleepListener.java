@@ -137,6 +137,7 @@ public final class SleepListener {
             Socket upstream = null;
             try {
                 upstream = new Socket();
+                upstream.setTcpNoDelay(true);
                 upstream.connect(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), target), 2000);
             } catch (IOException notReadyYet) {
                 closeQuietly(upstream);

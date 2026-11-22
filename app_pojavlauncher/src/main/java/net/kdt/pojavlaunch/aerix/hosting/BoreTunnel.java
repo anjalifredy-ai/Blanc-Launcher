@@ -156,6 +156,7 @@ public final class BoreTunnel {
                 remote = connect();
                 writeFrame(remote.getOutputStream(), "{\"Accept\":\"" + uuid + "\"}");
                 local = new Socket();
+                local.setTcpNoDelay(true);
                 local.connect(new InetSocketAddress("127.0.0.1", localPort), 3000);
                 pipe(remote, local);
             } catch (IOException ignored) {
