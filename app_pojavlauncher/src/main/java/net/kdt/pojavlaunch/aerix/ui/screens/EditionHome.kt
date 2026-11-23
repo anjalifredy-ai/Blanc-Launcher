@@ -68,8 +68,8 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
         if (edition == Edition.BEDROCK && !detection.allowed()) EditionState.set(context, Edition.JAVA)
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF08080D))) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             Box {
                 OutlinedButton(onClick = { detection = BedrockDetector.detect(context); menu = true }) {
                     Text(edition.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -102,7 +102,7 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
             }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (edition == Edition.BEDROCK && detection.allowed()) BedrockHome(detection) else HomeScreen(activity, navigate)
+            if (edition == Edition.BEDROCK && detection.allowed()) BedrockHome(detection) else BlancHome(activity, navigate)
         }
     }
 }

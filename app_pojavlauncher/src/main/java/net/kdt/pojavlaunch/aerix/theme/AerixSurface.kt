@@ -47,7 +47,7 @@ object AerixSurface {
     val glassShadow = Color(0x66000610)
 
     /** Static fallback used to define the built-in Aerix palette and wallpaper presets. */
-    val accentDefault = Color(0xFF8DEFE0)
+    val accentDefault = Color(0xFFC8B6FF)
 
     /** Current launcher accent; UI controls use this instead of a baked-in color. */
     val accent: Color
@@ -56,16 +56,16 @@ object AerixSurface {
         @Composable get() = accent
     val onAction: Color
         @Composable get() = onAccent
-    val accentSecondary = Color(0xFFC1B5FF)
-    val accentGlow = Color(0x668DEFE0)
-    val accentContainerDefault = Color(0x5539C8C1)
+    val accentSecondary = Color(0xFFFF9EC7)
+    val accentGlow = Color(0x66C8B6FF)
+    val accentContainerDefault = Color(0x558B6CFF)
     val accentContainer: Color
         @Composable get() = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.33f)
-    val onAccentDefault = Color(0xFF06201D)
+    val onAccentDefault = Color(0xFF140C2B)
     val onAccent: Color
         @Composable get() = MaterialTheme.colorScheme.onPrimary
-    val onAccentContainer = Color(0xFFBDFAF3)
-    val accentLight = Color(0xFF006D73)
+    val onAccentContainer = Color(0xFFEAE2FF)
+    val accentLight = Color(0xFF5B3FD0)
     val lightPanel = Color(0xFFFCFEFF)
     val lightTextPrimary = Color(0xFF14212B)
     val errorDarkContainer = Color(0xFF7A2635)
