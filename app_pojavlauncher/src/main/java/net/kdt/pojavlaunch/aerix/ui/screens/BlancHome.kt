@@ -50,7 +50,7 @@ import net.kdt.pojavlaunch.aerix.ui.AerixNav
 import net.kdt.pojavlaunch.aerix.ui.LauncherSection
 
 /** Blanc palette: ink black, ivory text, one electric violet-to-rose gradient. */
-private object Blanc {
+internal object Blanc {
     val ink = Color(0xFF08080D)
     val card = Color(0xFF12131C)
     val cardHi = Color(0xFF1B1C29)

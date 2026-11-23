@@ -25,6 +25,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -78,26 +80,40 @@ fun HostScreen(activity: FragmentActivity) {
         return
     }
 
-    AerixPage(title = "Host", subtitle = "Run Minecraft servers on this device") {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            AerixGhostButton("New server", R.drawable.aerix_ic_add, { creating = true })
-        }
-        Text(
-            "The server sleeps when nobody is online and starts again when a player joins. Friends join through a free tunnel address. Your phone must stay on and connected.",
-            color = AerixSurface.textSecondary, fontSize = 11.sp
-        )
-        if (servers.isEmpty()) {
-            Surface(shape = RoundedCornerShape(18.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("No servers yet", color = AerixSurface.textPrimary, fontWeight = FontWeight.Bold)
-                    Text("Pick Paper, Fabric, NeoForge, Forge, Quilt, Vanilla or Purpur and a version. The launcher downloads everything.", color = AerixSurface.textSecondary, fontSize = 12.sp)
-                    Button(onClick = { creating = true }) { Text("Create your first server") }
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x447C5CFF), Color.Transparent), radius = 800f))) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("HOST", color = Blanc.dim, fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                    Text("Your servers", color = Blanc.ivory, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                }
+                Row(
+                    Modifier.height(42.dp).clip(RoundedCornerShape(50)).background(Blanc.hero).clickable { creating = true }.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(painterResource(R.drawable.aerix_ic_add), null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("NEW SERVER", color = Color.White, fontSize = 12.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Black)
                 }
             }
-        } else {
-            LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 18.dp)) {
-                items(servers, key = { it.id }) { s ->
-                    ServerRow(s, if (status.serverId == s.id) status else null, logoRevision) { openId = s.id }
+            Text(
+                "Sleeps when empty, wakes when a player joins. Friends join via a free tunnel address. Keep your phone on and connected.",
+                color = Blanc.dim, fontSize = 11.sp
+            )
+            if (servers.isEmpty()) {
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Blanc.hero).clickable { creating = true }.padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("No servers yet", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                    Text("Paper, Purpur, Fabric, Quilt, Forge, NeoForge or Vanilla. Pick a version and the launcher downloads everything.", color = Color(0xCCFFFFFF), fontSize = 12.sp)
+                    Text("CREATE YOUR FIRST SERVER  \u2192", color = Color.White, fontSize = 12.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Black)
+                }
+            } else {
+                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 18.dp)) {
+                    items(servers, key = { it.id }) { s ->
+                        ServerRow(s, if (status.serverId == s.id) status else null, logoRevision) { openId = s.id }
+                    }
                 }
             }
         }
@@ -156,11 +172,11 @@ private fun StatusChip(text: String, color: Color) {
 @Composable
 private fun ServerRow(server: HostedServer, status: HostStatus?, logoRevision: Int, onClick: () -> Unit) {
     val (label, color) = stateLabel(server, status)
-    Surface(shape = RoundedCornerShape(18.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Surface(shape = RoundedCornerShape(22.dp), color = Blanc.card, border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.45f)), modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             LogoImage(server.id, logoRevision, 52)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(server.name, color = AerixSurface.textPrimary, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(server.name, color = Blanc.ivory, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("${server.software.displayName} ${server.mcVersion}", color = AerixSurface.textSecondary, fontSize = 12.sp)
                 val detail = status?.message?.takeIf { it.isNotBlank() && status.state != HostStatus.RUNNING }
                 if (detail != null) Text(detail, color = AerixSurface.textMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -342,6 +358,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
         }
     }
 
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x337C5CFF), Color.Transparent), radius = 800f))) {
     AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             // The launcher is usually landscape: controls on the left, console/settings get the full height on the right.
@@ -367,6 +384,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
             }
         }
     }
+    }
 
     if (confirmDelete) {
         AlertDialog(
@@ -389,7 +407,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
 @Composable
 private fun AddressCard(server: HostedServer, status: HostStatus) {
     val context = LocalContext.current
-    Surface(shape = RoundedCornerShape(14.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(14.dp), color = Blanc.card, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Join address", color = AerixSurface.textMuted, fontSize = 11.sp)
             val shared = status.publicAddress
@@ -458,7 +476,7 @@ private fun ConsoleTab(server: HostedServer, status: HostStatus, modifier: Modif
                 Toast.makeText(context, "Console copied", Toast.LENGTH_SHORT).show()
             }) { Text("Copy", fontSize = 12.sp) }
         }
-        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF0B1118), modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF06070B), modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (lines.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(12.dp)) {
                     Text(
@@ -543,7 +561,7 @@ private fun FilesTab(server: HostedServer, modifier: Modifier) {
             OutlinedButton(onClick = { refresh++ }) { Text("Refresh", fontSize = 12.sp) }
         }
         if (error != null) Text(error!!, color = Color(0xFFFF6B6B), fontSize = 12.sp)
-        Surface(shape = RoundedCornerShape(12.dp), color = AerixSurface.panel, modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(12.dp), color = Blanc.card, modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (entries.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(14.dp)) { Text("Nothing here yet. Start the server once to create its files.", color = AerixSurface.textMuted, fontSize = 12.sp) }
             } else {
@@ -690,7 +708,7 @@ private fun AddonsTab(server: HostedServer, modifier: Modifier) {
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(hits ?: emptyList(), key = { it.id }) { hit ->
-                Surface(shape = RoundedCornerShape(12.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = RoundedCornerShape(12.dp), color = Blanc.card, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(hit.title, color = AerixSurface.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
