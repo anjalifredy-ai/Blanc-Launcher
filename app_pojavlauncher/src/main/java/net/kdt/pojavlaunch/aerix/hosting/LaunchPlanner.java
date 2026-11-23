@@ -30,6 +30,11 @@ public final class LaunchPlanner {
         // No perf-data mmap file. The compiler and GC are left at the JVM defaults: forcing C1-only or the
         // serial collector made the running server noticeably laggy.
         plan.jvmArgs.add("-XX:-UsePerfData");
+        // Faster boot: skip bytecode verification of the server's own libraries (class loading is a big part of
+        // the start time on a phone). Unknown flags on a given runtime are ignored instead of stopping the JVM.
+        plan.jvmArgs.add("-XX:+IgnoreUnrecognizedVMOptions");
+        plan.jvmArgs.add("-XX:-BytecodeVerificationRemote");
+        plan.jvmArgs.add("-Xshare:auto");
     }
 
     /** The plan for running the installed server in [dir]. Throws if the install is missing or unrecognised. */

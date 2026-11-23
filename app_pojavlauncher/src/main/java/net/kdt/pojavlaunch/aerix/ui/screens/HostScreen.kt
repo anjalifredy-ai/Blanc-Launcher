@@ -25,6 +25,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.border
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
@@ -281,11 +286,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
     val (label, color) = stateLabel(server, status)
 
     val infoBlock: @Composable ColumnScope.() -> Unit = {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            LogoImage(server.id, logoRevision, 44)
-            StatusChip(label, color)
-            if (state == HostStatus.RUNNING && status.players >= 0) Text("${status.players}/${status.maxPlayers} players", color = AerixSurface.textSecondary, fontSize = 12.sp)
-        }
+        if (state == HostStatus.RUNNING && status.players >= 0) Text("${status.players}/${status.maxPlayers} players online", color = Blanc.ivory, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         if (status.message.isNotBlank() && state != HostStatus.RUNNING) {
             Text(status.message, color = if (state == HostStatus.ERROR) Color(0xFFFF6B6B) else AerixSurface.textSecondary, fontSize = 12.sp)
         }
@@ -293,18 +294,18 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             when {
                 !server.installed && state != HostStatus.INSTALLING ->
-                    Button(enabled = !otherBusy, onClick = { HostClient.install(context, server.id) }) { Text("Install") }
+                    BlancButton("Install", true, !otherBusy) { HostClient.install(context, server.id) }
                 state == HostStatus.OFF || state == HostStatus.ERROR -> {
-                    Button(enabled = !otherBusy && server.installed, onClick = { HostClient.startNow(context, server.id) }) { Text("Start") }
-                    OutlinedButton(enabled = !otherBusy && server.installed, onClick = { HostClient.host(context, server.id) }) { Text("Host") }
+                    BlancButton("Start", true, !otherBusy && server.installed) { HostClient.startNow(context, server.id) }
+                    BlancButton("Host", false, !otherBusy && server.installed) { HostClient.host(context, server.id) }
                 }
                 state == HostStatus.SLEEPING -> {
-                    Button(onClick = { HostClient.startNow(context, server.id) }) { Text("Wake now") }
-                    OutlinedButton(onClick = { HostClient.stopHosting(context, server.id) }) { Text("Stop hosting") }
+                    BlancButton("Wake now", true) { HostClient.startNow(context, server.id) }
+                    BlancButton("Stop hosting", false) { HostClient.stopHosting(context, server.id) }
                 }
                 state == HostStatus.STARTING || state == HostStatus.RUNNING -> {
-                    Button(onClick = { HostClient.stopServer(context, server.id) }) { Text("Stop server") }
-                    OutlinedButton(onClick = { HostClient.stopHosting(context, server.id) }) { Text("Stop hosting") }
+                    BlancButton("Stop server", true) { HostClient.stopServer(context, server.id) }
+                    BlancButton("Stop hosting", false) { HostClient.stopHosting(context, server.id) }
                 }
                 state == HostStatus.STOPPING -> Text("Stopping...", color = AerixSurface.textSecondary)
                 else -> {}
@@ -339,12 +340,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
         AddressCard(server, status)
     }
     val tabHeader: @Composable () -> Unit = {
-        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Console", fontSize = 12.sp, maxLines = 1) })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Files", fontSize = 12.sp, maxLines = 1) })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(if (Modrinth.usesPlugins(server.software)) "Plugins" else "Mods", fontSize = 12.sp, maxLines = 1) })
-            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Settings", fontSize = 12.sp, maxLines = 1) })
-        }
+        BlancTabs(listOf("Console", "Files", if (Modrinth.usesPlugins(server.software)) "Plugins" else "Mods", "Settings"), tab) { tab = it }
     }
     val tabBody: @Composable (Modifier) -> Unit = { mod ->
         if (tab == 0) {
@@ -358,32 +354,53 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x337C5CFF), Color.Transparent), radius = 800f))) {
-    AerixPage(title = server.name, subtitle = "${server.software.displayName} ${server.mcVersion}", trailing = { AerixGhostButton("Back", R.drawable.aerix_ic_close, onBack) }) {
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            // The launcher is usually landscape: controls on the left, console/settings get the full height on the right.
-            val boxWidth = maxWidth
-            if (maxWidth > 520.dp && maxWidth > maxHeight) {
-                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Column(Modifier.width(boxWidth * 0.36f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        infoBlock()
+    val panelShape = RoundedCornerShape(24.dp)
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x447C5CFF), Color.Transparent), radius = 900f))) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    Modifier.size(40.dp).clip(RoundedCornerShape(50)).background(Color(0x1FFFFFFF)).clickable(onClick = onBack),
+                    contentAlignment = Alignment.Center
+                ) { Icon(painterResource(R.drawable.aerix_ic_close), "Back", tint = Blanc.ivory, modifier = Modifier.size(18.dp)) }
+                LogoImage(server.id, logoRevision, 44)
+                Column(Modifier.weight(1f)) {
+                    Text(server.name, color = Blanc.ivory, fontSize = 20.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${server.software.displayName} ${server.mcVersion}", color = Blanc.dim, fontSize = 12.sp)
+                }
+                StatusChip(label, color)
+            }
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                val boxWidth = maxWidth
+                if (maxWidth > 520.dp && maxWidth > maxHeight) {
+                    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(
+                            Modifier.width(boxWidth * 0.36f).fillMaxHeight().clip(panelShape).background(Blanc.card)
+                                .border(androidx.compose.foundation.BorderStroke(1.dp, Blanc.line), panelShape)
+                                .verticalScroll(rememberScrollState()).padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) { infoBlock() }
+                        Column(
+                            Modifier.weight(1f).fillMaxHeight().clip(panelShape).background(Blanc.card)
+                                .border(androidx.compose.foundation.BorderStroke(1.dp, Blanc.line), panelShape).padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            tabHeader()
+                            tabBody(Modifier.weight(1f))
+                        }
                     }
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                } else {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(
+                            Modifier.weight(0.45f, fill = false).clip(panelShape).background(Blanc.card)
+                                .verticalScroll(rememberScrollState()).padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) { infoBlock() }
                         tabHeader()
                         tabBody(Modifier.weight(1f))
                     }
                 }
-            } else {
-                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Column(Modifier.weight(0.45f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        infoBlock()
-                    }
-                    tabHeader()
-                    tabBody(Modifier.weight(1f))
-                }
             }
         }
-    }
     }
 
     if (confirmDelete) {
@@ -663,6 +680,26 @@ private fun AddonsTab(server: HostedServer, modifier: Modifier) {
     var installingId by remember { mutableStateOf<String?>(null) }
     var installed by remember { mutableStateOf(emptyList<String>()) }
     var refresh by remember { mutableIntStateOf(0) }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    var name = "upload.jar"
+                    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                        val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (i >= 0 && c.moveToFirst()) name = c.getString(i) ?: name
+                    }
+                    if (!name.endsWith(".jar", ignoreCase = true)) throw java.io.IOException("Pick a .jar file")
+                    contentDir.mkdirs()
+                    context.contentResolver.openInputStream(uri)!!.use { ServerFiles.importStream(contentDir.parentFile!!, contentDir.name, name, it) }
+                    name
+                }
+            }
+            result.onSuccess { Toast.makeText(context, "Imported $it. Restart the server.", Toast.LENGTH_LONG).show(); refresh++ }
+                .onFailure { Toast.makeText(context, "Import failed: ${it.message}", Toast.LENGTH_LONG).show() }
+        }
+    }
 
     LaunchedEffect(searchKey) {
         hits = null; error = null
@@ -683,6 +720,7 @@ private fun AddonsTab(server: HostedServer, modifier: Modifier) {
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searchKey++ })
             )
             Button(onClick = { searchKey++ }) { Text("Search") }
+            OutlinedButton(onClick = { importPicker.launch("*/*") }) { Text("Import .jar", fontSize = 12.sp, maxLines = 1) }
         }
         if (installed.isNotEmpty()) {
             Text("Installed (${installed.size}) - restart the server to apply changes", color = AerixSurface.textMuted, fontSize = 11.sp)
@@ -869,6 +907,42 @@ private fun ChoiceButton(label: String, value: String, options: List<String>, mo
         OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) { Text("$label: $value", maxLines = 1) }
         DropdownMenu(open, { open = false }) {
             options.forEach { o -> DropdownMenuItem(text = { Text(o) }, onClick = { onChange(o); open = false }) }
+        }
+    }
+}
+
+
+@Composable
+private fun BlancButton(text: String, primary: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Box(
+        Modifier.height(44.dp).clip(shape)
+            .background(if (primary) (if (enabled) Color.White else Color(0x55FFFFFF)) else Color(0x1FFFFFFF))
+            .border(androidx.compose.foundation.BorderStroke(1.dp, if (primary) Color.Transparent else Color(0x33FFFFFF)), shape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text.uppercase(), fontSize = 12.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Black, maxLines = 1,
+            color = if (primary) Color(0xFF2A1670) else if (enabled) Blanc.ivory else Blanc.dim
+        )
+    }
+}
+
+@Composable
+private fun BlancTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(Blanc.ink).border(androidx.compose.foundation.BorderStroke(1.dp, Blanc.line), shape).padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        labels.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.weight(1f).height(34.dp).clip(shape).then(if (on) Modifier.background(Blanc.hero) else Modifier).clickable { onSelect(i) },
+                contentAlignment = Alignment.Center
+            ) { Text(label, color = if (on) Color.White else Blanc.dim, fontSize = 12.sp, fontWeight = if (on) FontWeight.Black else FontWeight.Medium, maxLines = 1) }
         }
     }
 }
