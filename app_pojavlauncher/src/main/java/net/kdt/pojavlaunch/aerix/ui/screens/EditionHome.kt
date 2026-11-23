@@ -63,6 +63,8 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
     val edition = EditionState.current
     // Re-check when the screen is shown again, e.g. after installing Minecraft from Google Play.
     LaunchedEffect(edition) { detection = BedrockDetector.detect(context) }
+    // Every Play Store version this launcher sees is kept automatically; no button needed.
+    LaunchedEffect(detection.versionCode) { withContext(Dispatchers.IO) { BedrockVersions.autoSave(context) } }
     // A copy that was removed while Bedrock is selected sends the user back to Java.
     LaunchedEffect(detection.installed, detection.fromPlayStore) {
         if (edition == Edition.BEDROCK && !detection.allowed()) EditionState.set(context, Edition.JAVA)

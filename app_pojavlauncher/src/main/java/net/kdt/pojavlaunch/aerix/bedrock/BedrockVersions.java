@@ -115,6 +115,22 @@ public final class BedrockVersions {
         return new Version(id, installed.versionName, installed.versionCode, dest, 0);
     }
 
+    /**
+     * Saves the installed Play Store Minecraft when this exact version is not saved yet. Returns the new
+     * version, or null when nothing was needed. Called when the launcher opens and when Play updates the app,
+     * so every version the launcher gets to see is kept without the player pressing anything.
+     */
+    public static synchronized Version autoSave(Context context) {
+        try {
+            BedrockDetector.Result installed = BedrockDetector.detect(context);
+            if (!installed.allowed()) return null;
+            for (Version v : list(context)) if (v.versionCode == installed.versionCode) return null;
+            return saveInstalled(context);
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
+    }
+
     /** Imports a .apk, or a bundle (.xapk / .apks / .zip) holding the split APKs. */
     public static Version importFrom(Context context, Uri uri) throws IOException {
         BedrockDetector.Result installed = BedrockDetector.detect(context);

@@ -243,7 +243,14 @@
                 <action android:name="net.kdt.pojavlaunch.aerix.ACTION_DISCORD_CLEAR_NOW" />
             </intent-filter>
         </receiver>
-    </application>
+            <receiver android:name="net.kdt.pojavlaunch.aerix.bedrock.BedrockUpdateReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+</application>
     <queries>
         <package android:name="com.mojang.minecraftpe"/>
         <package android:name="net.kdt.pojavlaunch.ffmpeg"/>
