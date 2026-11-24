@@ -139,11 +139,11 @@ object AerixRadii {
     val compact: Dp = 8.dp
     val controlSmall: Dp = 10.dp
     val control: Dp = 12.dp
-    val cardSmall: Dp = 16.dp
-    val card: Dp = 18.dp
-    val cardLarge: Dp = 20.dp
-    val panelSmall: Dp = 22.dp
-    val panel: Dp = 24.dp
+    val cardSmall: Dp = 18.dp
+    val card: Dp = 22.dp
+    val cardLarge: Dp = 26.dp
+    val panelSmall: Dp = 26.dp
+    val panel: Dp = 30.dp
     val dialog: Dp = 28.dp
     val hero: Dp = 32.dp
     val pill: Dp = 50.dp

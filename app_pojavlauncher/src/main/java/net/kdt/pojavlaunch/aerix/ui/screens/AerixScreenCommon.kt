@@ -20,6 +20,7 @@
 
 package net.kdt.pojavlaunch.aerix.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -42,6 +43,8 @@ fun AerixPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Blanc.ink)
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(androidx.compose.ui.graphics.Color(0x407C5CFF), androidx.compose.ui.graphics.Color.Transparent), radius = 900f))
             .padding(AerixLayoutDefaults.pagePadding()),
         verticalArrangement = Arrangement.spacedBy(AerixSpacing.md)
     ) {

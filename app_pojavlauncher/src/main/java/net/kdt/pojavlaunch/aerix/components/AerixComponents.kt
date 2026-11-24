@@ -23,6 +23,7 @@
 
 package net.kdt.pojavlaunch.aerix.components
 
+import androidx.compose.ui.graphics.Brush
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -223,10 +224,17 @@ fun SectionLabel(title: String, modifier: Modifier = Modifier, action: String? =
 @Composable
 fun PageHeader(title: String, subtitle: String?, modifier: Modifier = Modifier, trailing: @Composable (() -> Unit)? = null) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(width = 4.dp, height = 34.dp)
+                .clip(CircleShape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF7C5CFF), Color(0xFFFF6FA8))))
+        )
+        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, color = AerixSurface.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Text(text = title, color = Color(0xFFF6F3EC), fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.4).sp)
             if (subtitle != null) {
-                Text(text = subtitle, color = AerixSurface.textSecondary, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text = subtitle, color = Color(0xFF9A9BB0), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         if (trailing != null) trailing()
