@@ -934,10 +934,10 @@ internal fun ResultProjectLayout(
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(AerixRadii.cardSmall),
-        color = AerixSurface.panelRaised,
+        shape = RoundedCornerShape(20.dp),
+        color = Blanc.card,
         contentColor = Color.White,
-        border = BorderStroke(AerixSpacing.hairline, AerixSurface.borderSoft),
+        border = BorderStroke(1.dp, Blanc.line),
         onClick = onClick
     ) {
         Column(
@@ -972,7 +972,7 @@ internal fun ResultProjectLayout(
                 val downloadsText = remember(project.downloads) { formatDownloadCount(project.downloads) }
                 Surface(
                     shape = RoundedCornerShape(AerixRadii.control),
-                    color = AerixSurface.panel
+                    color = Blanc.cardHi
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = AerixSpacing.sm, vertical = AerixSpacing.tiny),
@@ -1040,13 +1040,13 @@ internal fun ResultProjectLayout(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp),
-                shape = RoundedCornerShape(AerixRadii.controlSmall),
-                color = if (isInstalled) AerixSurface.accentContainer else accent,
-                contentColor = if (isInstalled) accent else AerixSurface.onAccent,
+                shape = RoundedCornerShape(50),
+                color = if (isInstalled) AerixSurface.accentContainer else Color.Transparent,
+                contentColor = if (isInstalled) accent else Color.White,
                 onClick = onClick
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().then(if (isInstalled) Modifier else Modifier.background(Blanc.hero)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
