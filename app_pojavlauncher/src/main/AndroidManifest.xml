@@ -209,6 +209,13 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps a user-created Minecraft server reachable by friends: listens for players, starts the server when someone joins, and puts it to sleep when it is empty."/>
         </service>
+        <service android:name="net.kdt.pojavlaunch.aerix.multiplayer.MultiplayerService" android:process=":mp"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shares a player's Minecraft LAN world with friends through a tunnel while the game is on screen, or connects a friend to such a world."/>
+        </service>
         <service android:name="net.kdt.pojavlaunch.aerix.hosting.ServerJvmService" android:process=":serverjvm"
             android:exported="false"
             android:stopWithTask="false"

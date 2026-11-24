@@ -90,6 +90,8 @@ enum class LauncherSection {
     SERVERS,
     /** Host your own Minecraft servers on this device. */
     HOST,
+    /** Share a LAN world with a five-word code, or join one. */
+    MULTIPLAYER,
     /** Friends, messages and parties - the social launcher, opened from Home and the rail. */
     SOCIALS,
     DISCOVER,

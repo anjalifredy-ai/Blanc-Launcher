@@ -67,8 +67,9 @@ fun BlancTopBar(
     val tabs = listOf(
         BlancTab(LauncherSection.HOME, "Home", R.drawable.aerix_ic_home_filled),
         BlancTab(LauncherSection.LIBRARY, "Library", R.drawable.aerix_ic_dashboard_filled, AerixGuideState.LIBRARY),
+        BlancTab(LauncherSection.MULTIPLAYER, "Multiplayer", R.drawable.aerix_ic_sports_esports_outlined),
         BlancTab(LauncherSection.HOST, "Host", R.drawable.aerix_ic_terminal_outlined),
-        BlancTab(LauncherSection.SERVERS, "Servers", R.drawable.aerix_ic_sports_esports_outlined),
+        BlancTab(LauncherSection.SERVERS, "Servers", R.drawable.aerix_ic_public),
         BlancTab(LauncherSection.DISCOVER, "Discover", R.drawable.aerix_ic_public),
         BlancTab(LauncherSection.MODPACKS, "Modpacks", R.drawable.aerix_ic_archive_filled, AerixGuideState.MODPACKS)
     )

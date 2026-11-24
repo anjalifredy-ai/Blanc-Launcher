@@ -186,11 +186,11 @@ private fun QuickGrid(activity: FragmentActivity, navigate: (LauncherSection) ->
     val tiles = listOf(
         Tile("New", R.drawable.aerix_ic_add, Blanc.violet, create),
         Tile("Library", R.drawable.aerix_ic_dashboard_filled, Blanc.rose) { navigate(LauncherSection.LIBRARY) },
-        Tile("Host", R.drawable.aerix_ic_terminal_outlined, Blanc.amber) { navigate(LauncherSection.HOST) },
+        Tile("Multiplayer", R.drawable.aerix_ic_sports_esports_outlined, Blanc.amber) { navigate(LauncherSection.MULTIPLAYER) },
         Tile("Discover", R.drawable.aerix_ic_public, Color(0xFF5CE1E6)) { navigate(LauncherSection.DISCOVER) },
         Tile("Files", R.drawable.aerix_ic_folder_outlined, Color(0xFF8BE28B)) { navigate(LauncherSection.FILES) },
+        Tile("Host", R.drawable.aerix_ic_terminal_outlined, Color(0xFF7CC4FF)) { navigate(LauncherSection.HOST) },
         Tile("Controls", R.drawable.aerix_ic_build_outlined, Color(0xFFFF8A65)) { PojavNavigator.openCustomControls(activity) },
-        Tile("Logs", R.drawable.aerix_ic_description_outlined, Blanc.dim) { navigate(LauncherSection.LOGS) },
         Tile("Tools", R.drawable.aerix_ic_build_outlined, Color(0xFFB39DFF)) { navigate(LauncherSection.QUICK_TOOLS) }
     )
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
