@@ -23,6 +23,7 @@
 
 package net.kdt.pojavlaunch.aerix.components
 
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -116,26 +117,23 @@ fun AerixPrimaryButton(
     enabled: Boolean = true,
     accent: Color = AerixSurface.accent
 ) {
-    Surface(
+    val brand = Brush.linearGradient(listOf(Color(0xFF5B2EE0), accent, Color(0xFFB57BFF)))
+    Row(
         modifier = modifier
             .height(46.dp)
-            .liquidGlass(shape = CircleShape, tint = accent, strength = 0.92f, elevation = AerixMetrics.glassSelectedElevation),
-        shape = CircleShape,
-        color = if (enabled) accent else accent.copy(alpha = 0.35f),
-        contentColor = AerixSurface.onAccent,
-        enabled = enabled,
-        onClick = onClick
+            .then(if (enabled) Modifier.shadow(12.dp, CircleShape, ambientColor = accent, spotColor = accent) else Modifier)
+            .clip(CircleShape)
+            .background(if (enabled) brand else Brush.linearGradient(listOf(Color(0x558B5CF6), Color(0x558B5CF6))))
+            .border(BorderStroke(1.dp, Color(0x55FFFFFF)), CircleShape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = AerixSpacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AerixSpacing.sm, Alignment.CenterHorizontally)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AerixSpacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AerixSpacing.sm, Alignment.CenterHorizontally)
-        ) {
-            if (iconRes != null) {
-                Icon(painter = painterResource(iconRes), contentDescription = null, modifier = Modifier.size(18.dp))
-            }
-            Text(text = text, fontSize = 11.sp, letterSpacing = 0.8.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        if (iconRes != null) {
+            Icon(painter = painterResource(iconRes), contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
         }
+        Text(text = text, color = Color.White, fontSize = 12.sp, letterSpacing = 0.8.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
     }
 }
 
@@ -148,26 +146,21 @@ fun AerixGhostButton(
     modifier: Modifier = Modifier,
     tint: Color = AerixSurface.textPrimary
 ) {
-    Surface(
+    Row(
         modifier = modifier
             .height(40.dp)
-            .liquidGlass(shape = CircleShape, strength = 0.6f, elevation = AerixMetrics.glassSubtleElevation),
-        shape = CircleShape,
-        color = AerixSurface.panelRaised.copy(alpha = 0.27f),
-        contentColor = tint,
-        border = BorderStroke(AerixSpacing.hairline, AerixSurface.borderSoft),
-        onClick = onClick
+            .clip(CircleShape)
+            .background(Color(0xFF1D1538))
+            .border(BorderStroke(1.dp, Color(0x558B5CF6)), CircleShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = AerixSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AerixSpacing.xs, Alignment.CenterHorizontally)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AerixSpacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AerixSpacing.xs, Alignment.CenterHorizontally)
-        ) {
-            if (iconRes != null) {
-                Icon(painter = painterResource(iconRes), contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-            Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (iconRes != null) {
+            Icon(painter = painterResource(iconRes), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
         }
+        Text(text = text, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -177,8 +170,8 @@ fun MetaPill(text: String, @DrawableRes iconRes: Int? = null, modifier: Modifier
     Surface(
         modifier = modifier,
         shape = CircleShape,
-        color = AerixSurface.panelRaised.copy(alpha = 0.27f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+        color = Color(0x338B5CF6),
+        border = BorderStroke(1.dp, Color(0x558B5CF6)),
         contentColor = Color.White
     ) {
         Row(
