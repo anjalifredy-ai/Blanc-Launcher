@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -83,15 +84,16 @@ private fun loaderOf(versionId: String): String {
 private fun mcOf(versionId: String): String = GameDownloadTarget.minecraftVersionIn(versionId) ?: versionId
 
 @Composable
-fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
+fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, editionSwitch: @Composable () -> Unit = {}) {
     LaunchedEffect(Unit) { PojavAccountBridge.ensureLoaded() }
     val instances = PojavInstanceBridge.instances
     val selected = PojavInstanceBridge.selected
     val account = PojavAccountBridge.current
     val play: () -> Unit = { PojavLaunchBridge.play(activity) }
 
-    val rightColumn: @Composable () -> Unit = {
-        InfoCard(onClick = { navigate(LauncherSection.ACCOUNTS) }) {
+    val rightColumn: @Composable androidx.compose.foundation.layout.ColumnScope.(Boolean) -> Unit = { fill ->
+        val cm = if (fill) Modifier.weight(1f) else Modifier
+        InfoCard(cm, fill, onClick = { navigate(LauncherSection.ACCOUNTS) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AerixImageWell(image = account?.face, fallback = R.drawable.aerix_head_steve, size = 40.dp, radius = 12.dp)
                 Spacer(Modifier.width(10.dp))
@@ -102,7 +104,7 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
                 Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
             }
         }
-        InfoCard(onClick = { navigate(LauncherSection.LIBRARY) }) {
+        InfoCard(cm, fill, onClick = { navigate(LauncherSection.LIBRARY) }) {
             Text("Game Version", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -114,7 +116,7 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
                 Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
             }
         }
-        ProfilePicker(selected?.name, instances.map { it.name }) { index -> PojavInstanceBridge.select(instances[index]) }
+        ProfilePicker(cm, fill, selected?.name, instances.map { it.name }) { index -> PojavInstanceBridge.select(instances[index]) }
     }
 
     val features: @Composable (Modifier) -> Unit = { mod ->
@@ -134,18 +136,18 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
             if (maxWidth >= 560.dp) {
                 Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1.55f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Hero(selected, account, Modifier.weight(1f).fillMaxWidth(), play) { navigate(LauncherSection.CREATE_INSTANCE) }
-                        features(Modifier.fillMaxWidth().height(70.dp))
+                        Hero(selected, account, Modifier.weight(1f).fillMaxWidth(), play, editionSwitch) { navigate(LauncherSection.CREATE_INSTANCE) }
+                        features(Modifier.fillMaxWidth().height(84.dp))
                     }
-                    Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        rightColumn()
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rightColumn(true)
                     }
                 }
             } else {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Hero(selected, account, Modifier.fillMaxWidth().height(230.dp), play) { navigate(LauncherSection.CREATE_INSTANCE) }
-                    rightColumn()
-                    features(Modifier.fillMaxWidth().height(70.dp))
+                    Hero(selected, account, Modifier.fillMaxWidth().height(230.dp), play, editionSwitch) { navigate(LauncherSection.CREATE_INSTANCE) }
+                    rightColumn(false)
+                    features(Modifier.fillMaxWidth().height(84.dp))
                 }
             }
         }
@@ -158,6 +160,7 @@ private fun Hero(
     account: net.kdt.pojavlaunch.aerix.bridge.AerixAccount?,
     modifier: Modifier,
     onPlay: () -> Unit,
+    editionSwitch: @Composable () -> Unit,
     onCreate: () -> Unit
 ) {
     val shape = RoundedCornerShape(26.dp)
@@ -167,6 +170,8 @@ private fun Hero(
             .border(BorderStroke(1.dp, Blanc.line), shape)
     ) {
         Box(Modifier.align(Alignment.TopEnd).size(260.dp).background(Brush.radialGradient(listOf(Color(0x558B5CF6), Color.Transparent))))
+        CubeArt(Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f))
+        Box(Modifier.align(Alignment.TopEnd).padding(12.dp)) { editionSwitch() }
         if (account != null) {
             AerixSkinPreview3D(
                 account = account,
@@ -186,7 +191,7 @@ private fun Hero(
             Spacer(Modifier.height(4.dp))
             val pill = RoundedCornerShape(50)
             Row(
-                Modifier.height(48.dp).clip(pill).background(Blanc.hero).border(BorderStroke(1.dp, Color(0x66FFFFFF)), pill)
+                Modifier.height(50.dp).shadow(14.dp, pill, ambientColor = Blanc.violet, spotColor = Blanc.violet).clip(pill).background(Blanc.hero).border(BorderStroke(1.dp, Color(0x66FFFFFF)), pill)
                     .clickable(role = Role.Button) { if (selected != null) onPlay() else onCreate() }.padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -207,20 +212,21 @@ private fun Chip(text: String) {
 }
 
 @Composable
-private fun InfoCard(onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
+private fun InfoCard(modifier: Modifier = Modifier, fill: Boolean = false, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(20.dp)
     Column(
-        Modifier.fillMaxWidth().clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape)
+        modifier.fillMaxWidth().then(if (fill) Modifier.fillMaxHeight() else Modifier).clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.Center
     ) { content() }
 }
 
 @Composable
-private fun ProfilePicker(current: String?, names: List<String>, onPick: (Int) -> Unit) {
+private fun ProfilePicker(modifier: Modifier, fill: Boolean, current: String?, names: List<String>, onPick: (Int) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    Box {
-        InfoCard(onClick = { if (names.isNotEmpty()) open = true }) {
+    Box(modifier) {
+        InfoCard(Modifier, fill, onClick = { if (names.isNotEmpty()) open = true }) {
             Text("Profile", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -246,5 +252,29 @@ private fun Feature(title: String, subtitle: String, icon: Int, modifier: Modifi
         Spacer(Modifier.height(4.dp))
         Text(title, color = Blanc.ivory, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         Text(subtitle, color = Blanc.dim, fontSize = 10.sp, maxLines = 1)
+    }
+}
+
+/** Original isometric block art for the hero banner (drawn, no image assets). */
+@Composable
+private fun CubeArt(modifier: Modifier) {
+    androidx.compose.foundation.Canvas(modifier) {
+        fun cube(cx: Float, cy: Float, r: Float, a: Float) {
+            val k = r * 0.87f
+            val h = r * 0.5f
+            val top = androidx.compose.ui.graphics.Path().apply { moveTo(cx, cy - r); lineTo(cx + k, cy - h); lineTo(cx, cy); lineTo(cx - k, cy - h); close() }
+            val left = androidx.compose.ui.graphics.Path().apply { moveTo(cx - k, cy - h); lineTo(cx, cy); lineTo(cx, cy + r); lineTo(cx - k, cy + h); close() }
+            val right = androidx.compose.ui.graphics.Path().apply { moveTo(cx + k, cy - h); lineTo(cx, cy); lineTo(cx, cy + r); lineTo(cx + k, cy + h); close() }
+            drawPath(left, Color(0xFF4C2BB8).copy(alpha = a))
+            drawPath(right, Color(0xFF2E1778).copy(alpha = a))
+            drawPath(top, Color(0xFFA98BFF).copy(alpha = a))
+        }
+        val w = size.width
+        val hh = size.height
+        cube(w * 0.50f, hh * 0.28f, hh * 0.17f, 0.85f)
+        cube(w * 0.78f, hh * 0.42f, hh * 0.24f, 0.95f)
+        cube(w * 0.32f, hh * 0.60f, hh * 0.15f, 0.6f)
+        cube(w * 0.60f, hh * 0.78f, hh * 0.20f, 0.8f)
+        cube(w * 0.90f, hh * 0.82f, hh * 0.12f, 0.55f)
     }
 }

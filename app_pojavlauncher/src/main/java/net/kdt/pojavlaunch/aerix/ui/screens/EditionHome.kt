@@ -1,5 +1,8 @@
 package net.kdt.pojavlaunch.aerix.ui.screens
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -70,13 +73,18 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
         if (edition == Edition.BEDROCK && !detection.allowed()) EditionState.set(context, Edition.JAVA)
     }
 
-    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF0A0614))) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+    val switcher: @Composable () -> Unit = {
             Box {
-                OutlinedButton(onClick = { detection = BedrockDetector.detect(context); menu = true }) {
-                    Text(edition.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Row(
+                    Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(androidx.compose.ui.graphics.Color(0x66140E27))
+                        .border(androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0x558B5CF6)), androidx.compose.foundation.shape.RoundedCornerShape(50))
+                        .clickable { detection = BedrockDetector.detect(context); menu = true }
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(edition.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = androidx.compose.ui.graphics.Color(0xFFF4F0FF))
                     Spacer(Modifier.width(6.dp))
-                    Text("v", fontSize = 11.sp)
+                    Text("\u2304", fontSize = 13.sp, color = androidx.compose.ui.graphics.Color(0xFFA79DC4))
                 }
                 DropdownMenu(menu, { menu = false }) {
                     DropdownMenuItem(text = { Text("Java Edition") }, onClick = { EditionState.set(context, Edition.JAVA); menu = false })
@@ -102,9 +110,11 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
                     )
                 }
             }
-        }
+    }
+    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF0A0614))) {
+        if (edition == Edition.BEDROCK && detection.allowed()) Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp)) { switcher() }
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (edition == Edition.BEDROCK && detection.allowed()) BedrockHome(detection) else BlancHome(activity, navigate)
+            if (edition == Edition.BEDROCK && detection.allowed()) BedrockHome(detection) else BlancHome(activity, navigate, switcher)
         }
     }
 }

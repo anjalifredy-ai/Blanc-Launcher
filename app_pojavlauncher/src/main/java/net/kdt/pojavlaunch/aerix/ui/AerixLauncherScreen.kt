@@ -23,6 +23,7 @@
 
 package net.kdt.pojavlaunch.aerix.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -176,7 +177,7 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
         Box(modifier = Modifier.fillMaxSize().padding(AerixWindowInsets.padding())) {
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
               val narrow = maxWidth < 600.dp
-              Row(modifier = Modifier.fillMaxSize()) {
+              Row(modifier = Modifier.fillMaxSize().background(net.kdt.pojavlaunch.aerix.ui.screens.Blanc.ink)) {
                 // Socials has its own navigation; every other screen gets the Blanc sidebar.
                 if (section != LauncherSection.SOCIALS) {
                     BlancSideBar(section = section, compact = narrow, onNavigate = navigate)
