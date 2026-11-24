@@ -228,7 +228,7 @@ fun PageHeader(title: String, subtitle: String?, modifier: Modifier = Modifier, 
             modifier = Modifier
                 .size(width = 4.dp, height = 34.dp)
                 .clip(CircleShape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF7C5CFF), Color(0xFFFF6FA8))))
+                .background(Brush.verticalGradient(listOf(Color(0xFF8B5CF6), Color(0xFFC084FC))))
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

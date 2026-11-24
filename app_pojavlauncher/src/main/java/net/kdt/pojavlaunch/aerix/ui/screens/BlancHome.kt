@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,10 +21,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,28 +44,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import net.kdt.pojavlaunch.R
-import net.kdt.pojavlaunch.aerix.bridge.AerixInstance
+import net.kdt.pojavlaunch.aerix.bridge.AssetType
 import net.kdt.pojavlaunch.aerix.bridge.GameDownloadTarget
 import net.kdt.pojavlaunch.aerix.bridge.PojavAccountBridge
 import net.kdt.pojavlaunch.aerix.bridge.PojavInstanceBridge
 import net.kdt.pojavlaunch.aerix.bridge.PojavLaunchBridge
-import net.kdt.pojavlaunch.aerix.bridge.PojavNavigator
 import net.kdt.pojavlaunch.aerix.components.AerixImageWell
-import net.kdt.pojavlaunch.aerix.ui.AerixNav
+import net.kdt.pojavlaunch.aerix.components.AerixSkinPreview3D
+import net.kdt.pojavlaunch.aerix.ui.BlancNav
 import net.kdt.pojavlaunch.aerix.ui.LauncherSection
 
-/** Blanc palette: ink black, ivory text, one electric violet-to-rose gradient. */
+/** Blanc palette: deep purple-black surfaces, one violet accent. */
 internal object Blanc {
-    val ink = Color(0xFF08080D)
-    val card = Color(0xFF12131C)
-    val cardHi = Color(0xFF1B1C29)
-    val line = Color(0x1FFFFFFF)
-    val ivory = Color(0xFFF6F3EC)
-    val dim = Color(0xFF9A9BB0)
-    val violet = Color(0xFF7C5CFF)
-    val rose = Color(0xFFFF6FA8)
-    val amber = Color(0xFFFFB86B)
-    val hero = Brush.linearGradient(listOf(Color(0xFF3B2BA8), Color(0xFF7C3AED), Color(0xFFDB4F95)))
+    val ink = Color(0xFF0A0614)
+    val card = Color(0xFF140E27)
+    val cardHi = Color(0xFF1D1538)
+    val line = Color(0x338B5CF6)
+    val ivory = Color(0xFFF4F0FF)
+    val dim = Color(0xFFA79DC4)
+    val violet = Color(0xFF8B5CF6)
+    val rose = Color(0xFFC084FC)
+    val amber = Color(0xFF7C9CFF)
+    val hero = Brush.linearGradient(listOf(Color(0xFF5B2EE0), Color(0xFF8B5CF6), Color(0xFFB57BFF)))
 }
 
 private fun loaderOf(versionId: String): String {
@@ -84,41 +89,63 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
     val selected = PojavInstanceBridge.selected
     val account = PojavAccountBridge.current
     val play: () -> Unit = { PojavLaunchBridge.play(activity) }
-    val create: () -> Unit = { AerixNav.navigate(LauncherSection.CREATE_INSTANCE) }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Blanc.ink)
-            .background(Brush.radialGradient(listOf(Color(0x557C5CFF), Color.Transparent), radius = 900f))
-    ) {
+    val rightColumn: @Composable () -> Unit = {
+        InfoCard(onClick = { navigate(LauncherSection.ACCOUNTS) }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AerixImageWell(image = account?.face, fallback = R.drawable.aerix_head_steve, size = 40.dp, radius = 12.dp)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(account?.username ?: "No account", color = Blanc.ivory, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(account?.authType?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Tap to add", color = Blanc.dim, fontSize = 11.sp)
+                }
+                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
+            }
+        }
+        InfoCard(onClick = { navigate(LauncherSection.LIBRARY) }) {
+            Text("Game Version", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(26.dp).clip(RoundedCornerShape(8.dp)).background(Blanc.hero), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(R.drawable.aerix_ic_videogame_asset_outlined), null, tint = Color.White, modifier = Modifier.size(15.dp))
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(selected?.let { mcOf(it.versionId) } ?: "None", color = Blanc.ivory, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
+            }
+        }
+        ProfilePicker(selected?.name, instances.map { it.name }) { index -> PojavInstanceBridge.select(instances[index]) }
+    }
+
+    val features: @Composable (Modifier) -> Unit = { mod ->
+        Row(mod, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Feature("Fast Launch", "Max FPS", R.drawable.aerix_ic_rocket_launch_filled, Modifier.weight(1f)) { play() }
+            Feature("Mod Support", "One Click", R.drawable.aerix_ic_extension_outlined, Modifier.weight(1f)) {
+                BlancNav.kind = AssetType.MOD
+                net.kdt.pojavlaunch.aerix.ui.screens.AerixDownloadRequest.open(AssetType.MOD, navigate)
+            }
+            Feature("Multiplayer", "Play Together", R.drawable.aerix_ic_group_outlined, Modifier.weight(1f)) { navigate(LauncherSection.MULTIPLAYER) }
+            Feature("Hosting", "Own Server", R.drawable.aerix_ic_terminal_outlined, Modifier.weight(1f)) { navigate(LauncherSection.HOST) }
+        }
+    }
+
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(Brush.radialGradient(listOf(Color(0x448B5CF6), Color.Transparent), radius = 900f))) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val wide = maxWidth >= 640.dp
-            if (wide) {
-                Row(Modifier.fillMaxSize().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Column(Modifier.weight(1.25f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Hero(selected, account?.username, Modifier.weight(1f).fillMaxWidth(), play, create) {
-                            selected?.let { PojavInstanceBridge.edit(activity, it) }
-                        }
+            if (maxWidth >= 560.dp) {
+                Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1.55f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Hero(selected, account, Modifier.weight(1f).fillMaxWidth(), play) { navigate(LauncherSection.CREATE_INSTANCE) }
+                        features(Modifier.fillMaxWidth().height(70.dp))
                     }
-                    Column(
-                        Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        QuickGrid(activity, navigate, create)
-                        Recent(instances, selected, activity)
+                    Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rightColumn()
                     }
                 }
             } else {
-                Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Hero(selected, account?.username, Modifier.fillMaxWidth().height(230.dp), play, create) {
-                        selected?.let { PojavInstanceBridge.edit(activity, it) }
-                    }
-                    QuickGrid(activity, navigate, create)
-                    Recent(instances, selected, activity)
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Hero(selected, account, Modifier.fillMaxWidth().height(230.dp), play) { navigate(LauncherSection.CREATE_INSTANCE) }
+                    rightColumn()
+                    features(Modifier.fillMaxWidth().height(70.dp))
                 }
             }
         }
@@ -127,45 +154,45 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit) {
 
 @Composable
 private fun Hero(
-    selected: AerixInstance?, user: String?, modifier: Modifier,
-    onPlay: () -> Unit, onCreate: () -> Unit, onEdit: () -> Unit
+    selected: net.kdt.pojavlaunch.aerix.bridge.AerixInstance?,
+    account: net.kdt.pojavlaunch.aerix.bridge.AerixAccount?,
+    modifier: Modifier,
+    onPlay: () -> Unit,
+    onCreate: () -> Unit
 ) {
-    val shape = RoundedCornerShape(28.dp)
-    Box(modifier.clip(shape).background(Blanc.hero).border(BorderStroke(1.dp, Color(0x33FFFFFF)), shape)) {
-        // soft light blobs
-        Box(Modifier.align(Alignment.TopEnd).size(200.dp).background(Brush.radialGradient(listOf(Color(0x44FFFFFF), Color.Transparent))))
-        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("WELCOME BACK", color = Color(0xB3FFFFFF), fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-                    Text(user ?: "Player", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                if (selected != null) {
-                    Box(
-                        Modifier.size(38.dp).clip(CircleShape).background(Color(0x33FFFFFF)).clickable(role = Role.Button, onClick = onEdit),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(painterResource(R.drawable.aerix_ic_settings_filled), "Instance settings", tint = Color.White, modifier = Modifier.size(19.dp)) }
-                }
+    val shape = RoundedCornerShape(26.dp)
+    Box(
+        modifier.clip(shape)
+            .background(Brush.linearGradient(listOf(Color(0xFF2B1470), Color(0xFF140B33), Color(0xFF0C0720))))
+            .border(BorderStroke(1.dp, Blanc.line), shape)
+    ) {
+        Box(Modifier.align(Alignment.TopEnd).size(260.dp).background(Brush.radialGradient(listOf(Color(0x558B5CF6), Color.Transparent))))
+        if (account != null) {
+            AerixSkinPreview3D(
+                account = account,
+                interactionEnabled = false,
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(170.dp).padding(vertical = 6.dp)
+            )
+        }
+        Column(Modifier.align(Alignment.CenterStart).padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("READY TO PLAY", color = Blanc.rose, fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+            Text(
+                selected?.name ?: "Create your first instance", color = Blanc.ivory, fontSize = 26.sp, fontWeight = FontWeight.Black,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(210.dp)
+            )
+            if (selected != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Chip(loaderOf(selected.versionId)); Chip(mcOf(selected.versionId))
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AerixImageWell(image = selected?.icon, fallback = R.drawable.aerix_ic_videogame_asset_outlined, size = 64.dp, radius = 18.dp)
-                Spacer(Modifier.width(14.dp))
-                Column {
-                    Text(selected?.name ?: "No instance yet", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(6.dp))
-                    if (selected != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Chip(loaderOf(selected.versionId)); Chip(mcOf(selected.versionId))
-                    } else Text("Create your first instance to start playing", color = Color(0xCCFFFFFF), fontSize = 12.sp)
-                }
-            }
+            Spacer(Modifier.height(4.dp))
+            val pill = RoundedCornerShape(50)
             Row(
-                Modifier.fillMaxWidth().height(52.dp).clip(CircleShape).background(Color.White)
-                    .clickable(role = Role.Button) { if (selected != null) onPlay() else onCreate() },
-                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+                Modifier.height(48.dp).clip(pill).background(Blanc.hero).border(BorderStroke(1.dp, Color(0x66FFFFFF)), pill)
+                    .clickable(role = Role.Button) { if (selected != null) onPlay() else onCreate() }.padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(painterResource(if (selected != null) R.drawable.aerix_ic_play_arrow_filled else R.drawable.aerix_ic_add), null, tint = Color(0xFF2A1670), modifier = Modifier.size(22.dp))
+                Icon(painterResource(if (selected != null) R.drawable.aerix_ic_play_arrow_filled else R.drawable.aerix_ic_add), null, tint = Color.White, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (selected != null) "PLAY" else "CREATE", color = Color(0xFF2A1670), fontSize = 15.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Black)
+                Text(if (selected != null) "Launch Game" else "Create", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
             }
         }
     }
@@ -174,89 +201,50 @@ private fun Hero(
 @Composable
 private fun Chip(text: String) {
     Text(
-        text, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.clip(CircleShape).background(Color(0x33FFFFFF)).padding(horizontal = 10.dp, vertical = 4.dp)
+        text, color = Blanc.ivory, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clip(CircleShape).background(Color(0x338B5CF6)).padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }
 
-private class Tile(val label: String, val icon: Int, val tint: Color, val onClick: () -> Unit)
-
 @Composable
-private fun QuickGrid(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, create: () -> Unit) {
-    val tiles = listOf(
-        Tile("New", R.drawable.aerix_ic_add, Blanc.violet, create),
-        Tile("Library", R.drawable.aerix_ic_dashboard_filled, Blanc.rose) { navigate(LauncherSection.LIBRARY) },
-        Tile("Multiplayer", R.drawable.aerix_ic_sports_esports_outlined, Blanc.amber) { navigate(LauncherSection.MULTIPLAYER) },
-        Tile("Discover", R.drawable.aerix_ic_public, Color(0xFF5CE1E6)) { navigate(LauncherSection.DISCOVER) },
-        Tile("Files", R.drawable.aerix_ic_folder_outlined, Color(0xFF8BE28B)) { navigate(LauncherSection.FILES) },
-        Tile("Host", R.drawable.aerix_ic_terminal_outlined, Color(0xFF7CC4FF)) { navigate(LauncherSection.HOST) },
-        Tile("Controls", R.drawable.aerix_ic_build_outlined, Color(0xFFFF8A65)) { PojavNavigator.openCustomControls(activity) },
-        Tile("Tools", R.drawable.aerix_ic_build_outlined, Color(0xFFB39DFF)) { navigate(LauncherSection.QUICK_TOOLS) }
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle("QUICK ACCESS")
-        tiles.chunked(4).forEach { rowTiles ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                rowTiles.forEach { t -> TileView(t, Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TileView(t: Tile, modifier: Modifier) {
+private fun InfoCard(onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(20.dp)
     Column(
-        modifier.height(76.dp).clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape)
-            .clickable(role = Role.Button, onClick = t.onClick),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
-    ) {
-        Box(Modifier.size(34.dp).clip(CircleShape).background(t.tint.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
-            Icon(painterResource(t.icon), t.label, tint = t.tint, modifier = Modifier.size(19.dp))
+        Modifier.fillMaxWidth().clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) { content() }
+}
+
+@Composable
+private fun ProfilePicker(current: String?, names: List<String>, onPick: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        InfoCard(onClick = { if (names.isNotEmpty()) open = true }) {
+            Text("Profile", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(current ?: "No profiles", color = Blanc.ivory, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
+            }
         }
-        Spacer(Modifier.height(5.dp))
-        Text(t.label, color = Blanc.ivory, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            names.forEachIndexed { i, n -> DropdownMenuItem(text = { Text(n) }, onClick = { open = false; onPick(i) }) }
+        }
     }
 }
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(text, color = Blanc.dim, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
-}
-
-@Composable
-private fun Recent(instances: List<AerixInstance>, selected: AerixInstance?, activity: FragmentActivity) {
-    if (instances.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle("YOUR INSTANCES")
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            instances.take(12).forEach { inst ->
-                val active = inst == selected
-                val shape = RoundedCornerShape(20.dp)
-                Column(
-                    Modifier.width(150.dp).clip(shape)
-                        .background(if (active) Blanc.cardHi else Blanc.card)
-                        .border(BorderStroke(if (active) 1.5.dp else 1.dp, if (active) Blanc.violet else Blanc.line), shape)
-                        .clickable(role = Role.Button) { PojavInstanceBridge.select(inst) }
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AerixImageWell(image = inst.icon, fallback = R.drawable.aerix_ic_videogame_asset_outlined, size = 38.dp, radius = 12.dp)
-                        Spacer(Modifier.weight(1f))
-                        Box(
-                            Modifier.size(32.dp).clip(CircleShape).background(Blanc.violet)
-                                .clickable(role = Role.Button) {
-                                    PojavInstanceBridge.select(inst)
-                                    PojavLaunchBridge.play(activity)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) { Icon(painterResource(R.drawable.aerix_ic_play_arrow_filled), "Play ${inst.name}", tint = Color.White, modifier = Modifier.size(17.dp)) }
-                    }
-                    Text(inst.name, color = Blanc.ivory, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${loaderOf(inst.versionId)} · ${mcOf(inst.versionId)}", color = Blanc.dim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
+private fun Feature(title: String, subtitle: String, icon: Int, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier.fillMaxHeight().clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape)
+            .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
+    ) {
+        Icon(painterResource(icon), null, tint = Blanc.violet, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(title, color = Blanc.ivory, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(subtitle, color = Blanc.dim, fontSize = 10.sp, maxLines = 1)
     }
 }

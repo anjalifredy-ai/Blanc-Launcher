@@ -44,7 +44,7 @@ fun AerixPage(
         modifier = Modifier
             .fillMaxSize()
             .background(Blanc.ink)
-            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(androidx.compose.ui.graphics.Color(0x407C5CFF), androidx.compose.ui.graphics.Color.Transparent), radius = 900f))
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(androidx.compose.ui.graphics.Color(0x408B5CF6), androidx.compose.ui.graphics.Color.Transparent), radius = 900f))
             .padding(AerixLayoutDefaults.pagePadding()),
         verticalArrangement = Arrangement.spacedBy(AerixSpacing.md)
     ) {

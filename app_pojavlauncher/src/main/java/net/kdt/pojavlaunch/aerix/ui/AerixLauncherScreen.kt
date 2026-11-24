@@ -23,6 +23,7 @@
 
 package net.kdt.pojavlaunch.aerix.ui
 
+import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -173,23 +174,17 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
         // The wallpaper and the festival effects run to the edges of the display; the shell
         // itself stays clear of the camera cutout and of the system bars.
         Box(modifier = Modifier.fillMaxSize().padding(AerixWindowInsets.padding())) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
-                // Socials has its own navigation; every other screen gets the Blanc top bar.
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+              val narrow = maxWidth < 600.dp
+              Row(modifier = Modifier.fillMaxSize()) {
+                // Socials has its own navigation; every other screen gets the Blanc sidebar.
                 if (section != LauncherSection.SOCIALS) {
-                    BlancTopBar(
-                        selectedSection = section,
-                        onNavigate = navigate,
-                        onCreateInstance = { AerixNav.navigate(LauncherSection.CREATE_INSTANCE) },
-                        onOpenProfile = {
-                            SocialsNavigation.requestMyProfile()
-                            navigate(LauncherSection.SOCIALS)
-                        }
-                    )
+                    BlancSideBar(section = section, compact = narrow, onNavigate = navigate)
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxHeight()
                 ) {
                     AnimatedContent(
                         targetState = section,
@@ -266,6 +261,7 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                     }
                 }
             }
+              }
 
             FestivalTitleText(
                 festivals = festivals,

@@ -85,7 +85,7 @@ fun HostScreen(activity: FragmentActivity) {
         return
     }
 
-    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x447C5CFF), Color.Transparent), radius = 800f))) {
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x448B5CF6), Color.Transparent), radius = 800f))) {
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -355,7 +355,7 @@ private fun HostDetail(initial: HostedServer, globalStatus: HostStatus, logoRevi
     }
 
     val panelShape = RoundedCornerShape(24.dp)
-    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x447C5CFF), Color.Transparent), radius = 900f))) {
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x448B5CF6), Color.Transparent), radius = 900f))) {
         Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(

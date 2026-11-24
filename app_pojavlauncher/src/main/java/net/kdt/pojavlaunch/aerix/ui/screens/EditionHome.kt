@@ -70,7 +70,7 @@ fun EditionHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit)
         if (edition == Edition.BEDROCK && !detection.allowed()) EditionState.set(context, Edition.JAVA)
     }
 
-    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF08080D))) {
+    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF0A0614))) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             Box {
                 OutlinedButton(onClick = { detection = BedrockDetector.detect(context); menu = true }) {

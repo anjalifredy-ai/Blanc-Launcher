@@ -115,7 +115,7 @@ fun MultiplayerScreen(activity: FragmentActivity, navigate: (LauncherSection) ->
 
     fun stop() { send(Intent(context, MultiplayerService::class.java).setAction(MultiplayerService.ACTION_STOP)) }
 
-    Box(Modifier.fillMaxSize().background(Blanc.ink).background(Brush.radialGradient(listOf(Color(0x447C5CFF), Color.Transparent), radius = 900f))) {
+    Box(Modifier.fillMaxSize().background(Blanc.ink).background(Brush.radialGradient(listOf(Color(0x448B5CF6), Color.Transparent), radius = 900f))) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 640.dp
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

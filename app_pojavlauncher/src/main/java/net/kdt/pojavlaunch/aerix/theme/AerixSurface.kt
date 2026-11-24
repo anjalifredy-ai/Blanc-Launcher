@@ -29,14 +29,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 object AerixSurface {
-    val canvas = Color(0xFF05080F)
+    val canvas = Color(0xFF0A0614)
     // Neutral smoky glass lets the chosen wallpaper show through, without a blue colour cast.
-    val panel = Color(0x990E141F)
-    val panelRaised = Color(0xB3182233)
-    val panelTrack = Color(0x8012192A)
+    val panel = Color(0x99140E27)
+    val panelRaised = Color(0xB31D1538)
+    val panelTrack = Color(0x80140E27)
     val panelGlassTint = Color(0x3D596362)
-    val border = Color(0x40C9D6FF)
-    val borderSoft = Color(0x26C9D6FF)
+    val border = Color(0x408B5CF6)
+    val borderSoft = Color(0x268B5CF6)
     val borderHighlight = Color(0xDDF5FFFA)
     val glassTint = Color(0xFF7A8582)
     val glassBlue = Color(0xFF91E9FF)
@@ -47,7 +47,7 @@ object AerixSurface {
     val glassShadow = Color(0x66000610)
 
     /** Static fallback used to define the built-in Aerix palette and wallpaper presets. */
-    val accentDefault = Color(0xFFC8B6FF)
+    val accentDefault = Color(0xFF8B5CF6)
 
     /** Current launcher accent; UI controls use this instead of a baked-in color. */
     val accent: Color
@@ -57,11 +57,11 @@ object AerixSurface {
     val onAction: Color
         @Composable get() = onAccent
     val accentSecondary = Color(0xFFFF9EC7)
-    val accentGlow = Color(0x66C8B6FF)
-    val accentContainerDefault = Color(0x558B6CFF)
+    val accentGlow = Color(0x668B5CF6)
+    val accentContainerDefault = Color(0x558B5CF6)
     val accentContainer: Color
         @Composable get() = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.33f)
-    val onAccentDefault = Color(0xFF140C2B)
+    val onAccentDefault = Color(0xFFFFFFFF)
     val onAccent: Color
         @Composable get() = MaterialTheme.colorScheme.onPrimary
     val onAccentContainer = Color(0xFFEAE2FF)
