@@ -201,6 +201,7 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                             LauncherSection.LIBRARY -> LibraryScreen(activity)
                             LauncherSection.SERVERS -> ServersScreen(activity)
                             LauncherSection.HOST -> net.kdt.pojavlaunch.aerix.ui.screens.HostScreen(activity)
+                            LauncherSection.VERSIONS -> net.kdt.pojavlaunch.aerix.ui.screens.BlancVersions(activity, navigate)
                             LauncherSection.MULTIPLAYER -> net.kdt.pojavlaunch.aerix.ui.screens.MultiplayerScreen(activity, navigate)
                             LauncherSection.MODPACKS -> ModpacksScreen(navigate)
                             LauncherSection.SOCIALS -> SocialsScreen(activity) { AerixNav.finishTo(LauncherSection.HOME) }

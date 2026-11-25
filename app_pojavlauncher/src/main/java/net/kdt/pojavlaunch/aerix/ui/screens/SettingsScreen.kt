@@ -55,6 +55,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -201,6 +203,52 @@ private fun runtimeLabel(runtime: Runtime): String {
 @Composable
 fun SettingsScreen(activity: FragmentActivity, tabKey: String, onTabChanged: (String) -> Unit) {
     val activeKey = if (settingTabItems.any { it.key == tabKey }) tabKey else AerixNav.TAB_RENDERER
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        if (maxWidth >= 640.dp) {
+            Row(Modifier.fillMaxSize()) {
+                val navShape = RoundedCornerShape(22.dp)
+                Column(
+                    Modifier.padding(start = 12.dp, top = 10.dp, bottom = 10.dp).width(176.dp).fillMaxHeight()
+                        .clip(navShape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), navShape)
+                        .verticalScroll(rememberScrollState()).padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Blanc.hero), contentAlignment = Alignment.Center) {
+                            Icon(painterResource(R.drawable.aerix_ic_settings_filled), null, tint = Color.White, modifier = Modifier.size(19.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("Settings", color = Blanc.ivory, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                            Text("Customize", color = Blanc.dim, fontSize = 10.sp)
+                        }
+                    }
+                    settingTabItems.forEach { item ->
+                        val on = activeKey == item.key
+                        val rowShape = RoundedCornerShape(12.dp)
+                        Row(
+                            Modifier.fillMaxWidth().height(38.dp).clip(rowShape)
+                                .then(if (on) Modifier.background(Blanc.hero) else Modifier)
+                                .clickable { onTabChanged(item.key) }.padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(painterResource(item.iconRes), null, tint = if (on) Color.White else Blanc.dim, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(9.dp))
+                            Text(item.label, color = if (on) Color.White else Blanc.ivory, fontSize = 12.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                Box(Modifier.weight(1f).fillMaxHeight()) { SettingsInner(activity, tabKey, onTabChanged, false) }
+            }
+        } else {
+            SettingsInner(activity, tabKey, onTabChanged, true)
+        }
+    }
+}
+
+@Composable
+private fun SettingsInner(activity: FragmentActivity, tabKey: String, onTabChanged: (String) -> Unit, showTabs: Boolean) {
+    val activeKey = if (settingTabItems.any { it.key == tabKey }) tabKey else AerixNav.TAB_RENDERER
 
     Column(
         modifier = Modifier
@@ -211,7 +259,7 @@ fun SettingsScreen(activity: FragmentActivity, tabKey: String, onTabChanged: (St
         // Every settings page keeps the tab strip. The Wallpapers page used to be reachable from a
         // rail entry of its own and hid the strip for that reason; that entry is now the modpack
         // page, so Wallpapers is a normal tab like the rest.
-        AerixPillTabRow(modifier = Modifier.fillMaxWidth()) {
+        if (showTabs) AerixPillTabRow(modifier = Modifier.fillMaxWidth()) {
             settingTabItems.forEach { item ->
                 val selected = activeKey == item.key
                 AerixPillTab(

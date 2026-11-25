@@ -65,9 +65,9 @@ fun BlancSideBar(
     val entries = listOf(
         Entry("Home", R.drawable.aerix_ic_home_filled, { it == LauncherSection.HOME }) { it(LauncherSection.HOME) },
         Entry("Versions", R.drawable.aerix_ic_dashboard_filled, {
-            it == LauncherSection.LIBRARY || it == LauncherSection.CREATE_INSTANCE || it == LauncherSection.INSTANCE_EDITOR ||
+            it == LauncherSection.VERSIONS || it == LauncherSection.LIBRARY || it == LauncherSection.CREATE_INSTANCE || it == LauncherSection.INSTANCE_EDITOR ||
                 it == LauncherSection.INSTANCE_SELECTOR || it == LauncherSection.CONTENT
-        }) { it(LauncherSection.LIBRARY) },
+        }) { it(LauncherSection.VERSIONS) },
         Entry("Mods", R.drawable.aerix_ic_extension_outlined, discover(AssetType.MOD)) { nav -> BlancNav.kind = AssetType.MOD; AerixDownloadRequest.open(AssetType.MOD, nav) },
         Entry("Resource Packs", R.drawable.aerix_ic_format_paint_outlined, discover(AssetType.RESOURCE_PACK)) { nav -> BlancNav.kind = AssetType.RESOURCE_PACK; AerixDownloadRequest.open(AssetType.RESOURCE_PACK, nav) },
         Entry("Shaders", R.drawable.aerix_ic_lightbulb, discover(AssetType.SHADER_PACK)) { nav -> BlancNav.kind = AssetType.SHADER_PACK; AerixDownloadRequest.open(AssetType.SHADER_PACK, nav) },

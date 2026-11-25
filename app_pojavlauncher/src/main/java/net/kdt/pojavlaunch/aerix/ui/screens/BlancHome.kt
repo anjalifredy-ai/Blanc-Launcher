@@ -104,7 +104,7 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, e
                 Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
             }
         }
-        InfoCard(cm, fill, onClick = { navigate(LauncherSection.LIBRARY) }) {
+        InfoCard(cm, fill, onClick = { navigate(LauncherSection.VERSIONS) }) {
             Text("Game Version", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -257,7 +257,7 @@ private fun Feature(title: String, subtitle: String, icon: Int, modifier: Modifi
 
 /** Original isometric block art for the hero banner (drawn, no image assets). */
 @Composable
-private fun CubeArt(modifier: Modifier) {
+internal fun CubeArt(modifier: Modifier) {
     androidx.compose.foundation.Canvas(modifier) {
         fun cube(cx: Float, cy: Float, r: Float, a: Float) {
             val k = r * 0.87f

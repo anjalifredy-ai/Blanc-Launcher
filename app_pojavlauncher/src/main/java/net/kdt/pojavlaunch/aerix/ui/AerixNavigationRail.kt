@@ -92,6 +92,8 @@ enum class LauncherSection {
     HOST,
     /** Share a LAN world with a five-word code, or join one. */
     MULTIPLAYER,
+    /** Blanc version list with one-tap install. */
+    VERSIONS,
     /** Friends, messages and parties - the social launcher, opened from Home and the rail. */
     SOCIALS,
     DISCOVER,
