@@ -1082,7 +1082,7 @@ object PojavAccountBridge : LoginListener {
     }
 
     /** Renders a crisp 2D front-facing Minecraft character preview from a 64x64/64x32/HD skin texture. */
-    private fun renderSkinBodyPreview(skinBitmap: Bitmap): Bitmap {
+    fun renderSkinBodyPreview(skinBitmap: Bitmap): Bitmap {
         val uvScale = (skinBitmap.width / 64).coerceAtLeast(1)
         val is64Tall = skinBitmap.height >= 64 * uvScale
         val scale = 6
@@ -1246,7 +1246,7 @@ object PojavAccountBridge : LoginListener {
     }
 
     /** Builds a valid 64x64 Minecraft player skin texture so 3D skinview3d and 2D previews render cleanly. */
-    private fun generateSkinBitmap(
+    fun generateSkinBitmap(
         skinTone: Int,
         hairColor: Int,
         eyeColor: Int,

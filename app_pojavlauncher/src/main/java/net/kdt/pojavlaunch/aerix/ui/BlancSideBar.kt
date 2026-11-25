@@ -71,6 +71,7 @@ fun BlancSideBar(
         Entry("Mods", R.drawable.aerix_ic_extension_outlined, discover(AssetType.MOD)) { nav -> BlancNav.kind = AssetType.MOD; AerixDownloadRequest.open(AssetType.MOD, nav) },
         Entry("Resource Packs", R.drawable.aerix_ic_format_paint_outlined, discover(AssetType.RESOURCE_PACK)) { nav -> BlancNav.kind = AssetType.RESOURCE_PACK; AerixDownloadRequest.open(AssetType.RESOURCE_PACK, nav) },
         Entry("Shaders", R.drawable.aerix_ic_lightbulb, discover(AssetType.SHADER_PACK)) { nav -> BlancNav.kind = AssetType.SHADER_PACK; AerixDownloadRequest.open(AssetType.SHADER_PACK, nav) },
+        Entry("Wardrobe", R.drawable.aerix_ic_person_outlined, { it == LauncherSection.WARDROBE }) { it(LauncherSection.WARDROBE) },
         Entry("Multiplayer", R.drawable.aerix_ic_group_outlined, { it == LauncherSection.MULTIPLAYER }) { it(LauncherSection.MULTIPLAYER) },
         Entry("Hosting", R.drawable.aerix_ic_terminal_outlined, { it == LauncherSection.HOST }) { it(LauncherSection.HOST) },
         Entry("Servers", R.drawable.aerix_ic_public, { it == LauncherSection.SERVERS }) { it(LauncherSection.SERVERS) },

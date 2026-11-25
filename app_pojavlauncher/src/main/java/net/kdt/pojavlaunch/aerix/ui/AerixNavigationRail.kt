@@ -94,6 +94,8 @@ enum class LauncherSection {
     MULTIPLAYER,
     /** Blanc version list with one-tap install. */
     VERSIONS,
+    /** Skin wardrobe: browse thousands of skins, look up players, equip. */
+    WARDROBE,
     /** Friends, messages and parties - the social launcher, opened from Home and the rail. */
     SOCIALS,
     DISCOVER,
