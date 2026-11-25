@@ -81,11 +81,11 @@ private const val LIBRARY_SIZE = 23040
 fun BlancWardrobe(activity: FragmentActivity) {
     val context = LocalContext.current
     val account = PojavAccountBridge.current
-    var tab by mutableIntStateOf(0)
-    var selected by mutableIntStateOf(0)
+    var tab by remember { mutableIntStateOf(0) }
+    var selected by remember { mutableIntStateOf(0) }
     var slim by remember { mutableStateOf(false) }
     var lookup by remember { mutableStateOf("") }
-    var offset by mutableIntStateOf(0)
+    var offset by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
     val saved = remember { PojavAccountBridge.loadSavedSkinPresets(context) }
     val tabs = listOf("Library", "Saved", "Find player")
