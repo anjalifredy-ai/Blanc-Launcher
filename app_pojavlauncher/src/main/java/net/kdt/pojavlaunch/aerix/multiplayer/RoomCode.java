@@ -45,6 +45,23 @@ public final class RoomCode {
 
     private RoomCode() {}
 
+    /** A realm address is "name-1A4S6.blanc": the code rides after the last dash. */
+    public static String address(String name, String code) {
+        String n = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "");
+        if (n.isEmpty()) n = "realm";
+        if (n.length() > 16) n = n.substring(0, 16);
+        return n + "-" + code.toLowerCase(Locale.ROOT) + ".blanc";
+    }
+
+    /** Turns "name-1A4S6.blanc" (any case) into "1A4S6"; leaves other text untouched. */
+    public static String realmToCode(String text) {
+        String t = text.trim();
+        if (!t.toLowerCase(Locale.ROOT).endsWith(".blanc")) return t;
+        t = t.substring(0, t.length() - 6);
+        int i = t.lastIndexOf('-');
+        return i >= 0 ? t.substring(i + 1) : t;
+    }
+
     private static int check(int relay, int hi, int lo, int salt) {
         return (relay * 31 + hi * 17 + lo * 7 + salt * 13 + 91) & 0xFF;
     }
@@ -97,6 +114,7 @@ public final class RoomCode {
     /** Accepts spaces, dashes, commas and any capitalisation. Returns null for anything that is not a valid code. */
     public static Room decode(String text) {
         if (text == null) return null;
+        text = realmToCode(text);
         Room quick = decodeShort(text);
         if (quick != null) return quick;
         String[] parts = text.trim().toLowerCase(Locale.ROOT).split("[\\s,.\\-_]+");

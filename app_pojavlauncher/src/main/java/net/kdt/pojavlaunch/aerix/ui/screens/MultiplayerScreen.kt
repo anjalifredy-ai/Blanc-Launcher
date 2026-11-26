@@ -60,9 +60,9 @@ import net.kdt.pojavlaunch.aerix.ui.LauncherSection
 import java.io.File
 import java.net.ServerSocket
 
-private class MpState(val mode: String = "", val state: String = "OFF", val code: String = "", val players: Int = 0, val max: Int = 10, val message: String = "")
+internal class MpState(val mode: String = "", val state: String = "OFF", val code: String = "", val players: Int = 0, val max: Int = 10, val message: String = "")
 
-private fun readMp(context: Context): MpState {
+internal fun readMp(context: Context): MpState {
     val f = MultiplayerService.stateFile(context)
     if (!f.isFile) return MpState()
     val m = f.readLines().mapNotNull { l -> l.indexOf('=').takeIf { it > 0 }?.let { l.substring(0, it) to l.substring(it + 1) } }.toMap()
@@ -183,7 +183,7 @@ fun MultiplayerScreen(activity: FragmentActivity, navigate: (LauncherSection) ->
 }
 
 @Composable
-private fun Card(modifier: Modifier, title: String, content: @Composable () -> Unit) {
+internal fun Card(modifier: Modifier, title: String, content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(24.dp)
     Column(
         modifier.clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape).padding(16.dp),
@@ -195,7 +195,7 @@ private fun Card(modifier: Modifier, title: String, content: @Composable () -> U
 }
 
 @Composable
-private fun Pill(text: String, primary: Boolean, onClick: () -> Unit) {
+internal fun Pill(text: String, primary: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(50)
     Box(
         Modifier.fillMaxWidth().height(46.dp).clip(shape)
@@ -206,7 +206,7 @@ private fun Pill(text: String, primary: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LiveCodeCard(mp: MpState, onStop: () -> Unit, onCopy: () -> Unit) {
+internal fun LiveCodeCard(mp: MpState, onStop: () -> Unit, onCopy: () -> Unit) {
     val shape = RoundedCornerShape(26.dp)
     Column(Modifier.fillMaxWidth().clip(shape).background(Blanc.hero).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("YOUR WORLD IS OPEN  ·  ${mp.players}/${mp.max} ONLINE", color = Color(0xCCFFFFFF), fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)

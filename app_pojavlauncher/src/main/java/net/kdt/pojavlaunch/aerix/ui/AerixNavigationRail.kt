@@ -92,6 +92,7 @@ enum class LauncherSection {
     HOST,
     /** Share a LAN world with a five-word code, or join one. */
     MULTIPLAYER,
+    REALMS,
     /** Blanc version list with one-tap install. */
     VERSIONS,
     /** Skin wardrobe: browse thousands of skins, look up players, equip. */

@@ -203,7 +203,8 @@ fun AerixLauncherScreen(activity: FragmentActivity) {
                             LauncherSection.HOST -> net.kdt.pojavlaunch.aerix.ui.screens.HostScreen(activity)
                             LauncherSection.WARDROBE -> net.kdt.pojavlaunch.aerix.ui.screens.BlancWardrobe(activity)
                             LauncherSection.VERSIONS -> net.kdt.pojavlaunch.aerix.ui.screens.BlancVersions(activity, navigate)
-                            LauncherSection.MULTIPLAYER -> net.kdt.pojavlaunch.aerix.ui.screens.MultiplayerScreen(activity, navigate)
+                            LauncherSection.REALMS -> net.kdt.pojavlaunch.aerix.ui.screens.RealmsScreen(activity, navigate)
+            LauncherSection.MULTIPLAYER -> net.kdt.pojavlaunch.aerix.ui.screens.MultiplayerScreen(activity, navigate)
                             LauncherSection.MODPACKS -> ModpacksScreen(navigate)
                             LauncherSection.SOCIALS -> SocialsScreen(activity) { AerixNav.finishTo(LauncherSection.HOME) }
                             LauncherSection.DISCOVER, LauncherSection.DOWNLOADS -> DiscoverScreen(activity, navigate)

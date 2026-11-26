@@ -36,7 +36,10 @@ public final class MultiplayerService extends Service {
     public static final String EXTRA_LOG = "log";
     public static final String EXTRA_CODE = "code";
     public static final String EXTRA_LOCAL_PORT = "localPort";
+    public static final String EXTRA_MAX = "max";
     public static final int MAX_PLAYERS = 10;
+    public static final int MAX_REALM_SLOTS = 50;
+    private volatile int maxPlayers = MAX_PLAYERS;
     private static final int NOTIFICATION_ID = 7410;
 
     private final Object lock = new Object();
@@ -67,6 +70,7 @@ public final class MultiplayerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? ACTION_STOP : intent.getAction();
         if (ACTION_HOST.equals(action)) {
+            maxPlayers = Math.max(2, Math.min(MAX_REALM_SLOTS, intent.getIntExtra(EXTRA_MAX, MAX_PLAYERS)));
             startHost(intent.getStringExtra(EXTRA_LOG));
         } else if (ACTION_JOIN.equals(action)) {
             startJoin(intent.getStringExtra(EXTRA_CODE), intent.getIntExtra(EXTRA_LOCAL_PORT, 0));
@@ -90,7 +94,7 @@ public final class MultiplayerService extends Service {
         int players = proxy == null ? 0 : proxy.connections();
         synchronized (lock) {
             text = "mode=" + mode + "\nstate=" + state + "\ncode=" + code + "\nplayers=" + players
-                    + "\nmax=" + MAX_PLAYERS + "\nmessage=" + message.replace('\n', ' ') + "\n";
+                    + "\nmax=" + maxPlayers + "\nmessage=" + message.replace('\n', ' ') + "\n";
         }
         try (FileOutputStream out = new FileOutputStream(stateFile(this))) {
             out.write(text.getBytes(StandardCharsets.UTF_8));
@@ -106,7 +110,7 @@ public final class MultiplayerService extends Service {
         synchronized (lock) {
             if (mode.equals("host")) {
                 title = code.isEmpty() ? "Blanc world" : "World code: " + code;
-                text = code.isEmpty() ? message : "Friends enter this code in Blanc > Multiplayer. " + (proxy == null ? 0 : proxy.connections()) + "/" + MAX_PLAYERS + " online";
+                text = code.isEmpty() ? message : "Friends enter this code in Blanc > Multiplayer. " + (proxy == null ? 0 : proxy.connections()) + "/" + maxPlayers + " online";
             } else {
                 title = "Joined a Blanc world";
                 text = message;
@@ -192,7 +196,7 @@ public final class MultiplayerService extends Service {
         watching = true;
         set("CONNECTING", "Opening your world to friends...");
         try {
-            proxy = new CappedProxy("127.0.0.1", lanPort, MAX_PLAYERS);
+            proxy = new CappedProxy("127.0.0.1", lanPort, maxPlayers);
             int proxyPort = proxy.start(0);
             tunnel = new BoreTunnel(RoomCode.RELAYS[0], proxyPort, 0, new BoreTunnel.Listener() {
                 @Override public void onState(String s) {
