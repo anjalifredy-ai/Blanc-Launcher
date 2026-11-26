@@ -292,6 +292,27 @@ fun DiscoverScreen(activity: FragmentActivity, navigate: (LauncherSection) -> Un
             .padding(horizontal = AerixSpacing.md, vertical = AerixSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(AerixSpacing.sm)
     ) {
+        if (activeProject == null) {
+            val (headTitle, headSub) = when (selectedTab) {
+                DiscoverTab.MODS -> "Mods" to "Enhance your Minecraft experience"
+                DiscoverTab.RESOURCE_PACKS -> "Resource Packs" to "Change the look and feel"
+                DiscoverTab.SHADERS -> "Shaders" to "Stunning visuals for Minecraft"
+                DiscoverTab.MODPACKS -> "Modpacks" to "Ready-made adventures in one tap"
+                DiscoverTab.WORLDS -> "Worlds" to "Maps and worlds to explore"
+                else -> "Discover" to "Find something new"
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Blanc.hero),
+                    contentAlignment = Alignment.Center
+                ) { Icon(painterResource(selectedTab.iconRes), null, tint = Color.White, modifier = Modifier.size(22.dp)) }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(headTitle, color = Blanc.ivory, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                    Text(headSub, color = Blanc.dim, fontSize = 11.sp)
+                }
+            }
+        }
         // Top category pill bar (Mirai DownloadScreen.kt lines 152-160)
         AerixPillTabRow(modifier = Modifier.fillMaxWidth()) {
             DiscoverTab.entries.forEach { tab ->

@@ -7,13 +7,13 @@ public class MultiplayerSmokeTest {
     public static void main(String[] a) throws Exception {
         for (int port : new int[]{1024, 25565, 54321, 65535}) {
             String code = RoomCode.encode(0, port, port * 7);
-            check(code.split("-").length == 5, code);
-            RoomCode.Room r = RoomCode.decode(code.toUpperCase().replace('-', ' '));
+            check(code.length() == 5, code);
+            RoomCode.Room r = RoomCode.decode(code.toLowerCase());
             check(r != null && r.port == port && r.relayHost.equals("bore.pub"), "roundtrip " + code);
         }
         String c = RoomCode.encode(0, 40000, 3);
-        String[] p = c.split("-"); p[2] = p[2].equals("amber") ? "anchor" : "amber";
-        check(RoomCode.decode(String.join("-", p)) == null, "tampered code accepted");
+        String bad = (c.charAt(2) == 'A' ? "B" : "A");
+        check(RoomCode.decode(c.substring(0, 2) + bad + c.substring(3)) == null, "tampered code accepted");
         check(RoomCode.decode("hello world") == null, "garbage");
         check(LanPort.parse("[Server thread/INFO]: Started serving on 51234") == 51234, "modern");
         check(LanPort.parse("[Server thread/INFO]: Local game hosted on port 40111") == 40111, "old");

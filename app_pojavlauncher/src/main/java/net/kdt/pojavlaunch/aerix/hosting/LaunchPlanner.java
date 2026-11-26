@@ -33,7 +33,6 @@ public final class LaunchPlanner {
         // Faster boot: skip bytecode verification of the server's own libraries (class loading is a big part of
         // the start time on a phone). Unknown flags on a given runtime are ignored instead of stopping the JVM.
         plan.jvmArgs.add("-XX:+IgnoreUnrecognizedVMOptions");
-        plan.jvmArgs.add("-XX:-BytecodeVerificationRemote");
         plan.jvmArgs.add("-Xshare:auto");
     }
 

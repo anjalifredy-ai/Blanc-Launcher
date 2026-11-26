@@ -49,8 +49,39 @@ public final class RoomCode {
         return (relay * 31 + hi * 17 + lo * 7 + salt * 13 + 91) & 0xFF;
     }
 
-    /** [salt] is any 0..255; it only makes codes for the same port look different. */
+    private static final String ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+    /** Short code like "1A4S6": 5 symbols x 5 bits = relay(2) + port(16) + check(7). */
     public static String encode(int relayIndex, int port, int salt) {
+        if (relayIndex < 0 || relayIndex >= Math.min(4, RELAYS.length)) throw new IllegalArgumentException("relay");
+        if (port < 1 || port > 65535) throw new IllegalArgumentException("port");
+        long v = ((long) relayIndex << 23) | ((long) port << 7) | shortCheck(relayIndex, port);
+        char[] c = new char[5];
+        for (int i = 4; i >= 0; i--) { c[i] = ALPHA.charAt((int) (v & 31)); v >>= 5; }
+        return new String(c);
+    }
+
+    private static int shortCheck(int relay, int port) {
+        return (relay * 53 + (port >> 8) * 31 + (port & 0xFF) * 17 + 29) & 0x7F;
+    }
+
+    private static Room decodeShort(String text) {
+        String t = text.trim().toUpperCase(Locale.ROOT).replaceAll("[\\s\\-_.,]", "")
+                .replace('O', '0').replace('I', '1').replace('L', '1').replace('U', 'V');
+        if (t.length() != 5) return null;
+        long v = 0;
+        for (int i = 0; i < 5; i++) {
+            int k = ALPHA.indexOf(t.charAt(i));
+            if (k < 0) return null;
+            v = (v << 5) | k;
+        }
+        int relay = (int) (v >> 23) & 3, port = (int) (v >> 7) & 0xFFFF, chk = (int) (v & 0x7F);
+        if (port < 1 || relay >= RELAYS.length || chk != shortCheck(relay, port)) return null;
+        return new Room(RELAYS[relay], port);
+    }
+
+    /** Old five-word codes. */
+    public static String encodeWords(int relayIndex, int port, int salt) {
         if (relayIndex < 0 || relayIndex >= RELAYS.length) throw new IllegalArgumentException("relay");
         if (port < 1 || port > 65535) throw new IllegalArgumentException("port");
         int hi = port >> 8, lo = port & 0xFF, s = salt & 0xFF;
@@ -66,6 +97,8 @@ public final class RoomCode {
     /** Accepts spaces, dashes, commas and any capitalisation. Returns null for anything that is not a valid code. */
     public static Room decode(String text) {
         if (text == null) return null;
+        Room quick = decodeShort(text);
+        if (quick != null) return quick;
         String[] parts = text.trim().toLowerCase(Locale.ROOT).split("[\\s,.\\-_]+");
         if (parts.length != 5) return null;
         int[] b = new int[5];

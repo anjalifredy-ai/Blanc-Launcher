@@ -103,7 +103,7 @@ fun MultiplayerScreen(activity: FragmentActivity, navigate: (LauncherSection) ->
     }
 
     fun join(code: String) {
-        if (RoomCode.decode(code) == null) { toast("That code is not valid. It is five words."); return }
+        if (RoomCode.decode(code) == null) { toast("That code is not valid. Example: 1A4S6."); return }
         val port = runCatching { ServerSocket(0).use { it.localPort } }.getOrDefault(25599)
         send(
             Intent(context, MultiplayerService::class.java).setAction(MultiplayerService.ACTION_JOIN)
@@ -130,7 +130,7 @@ fun MultiplayerScreen(activity: FragmentActivity, navigate: (LauncherSection) ->
                 }
                 val hostCard: @Composable (Modifier) -> Unit = { mod ->
                     Card(mod, "HOST A WORLD") {
-                        Text("Pick the instance, then tap Start. Open your world and choose Esc > Open to LAN > Start LAN World. A five-word code appears in the notification.", color = Blanc.dim, fontSize = 11.sp)
+                        Text("Pick the instance, then tap Start. Open your world and choose Esc > Open to LAN > Start LAN World. A short code like 1A4S6 appears in the notification.", color = Blanc.dim, fontSize = 11.sp)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             instances.take(12).forEach { inst ->
                                 val on = inst == selected

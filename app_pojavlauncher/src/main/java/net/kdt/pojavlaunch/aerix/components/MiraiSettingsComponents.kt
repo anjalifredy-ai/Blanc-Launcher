@@ -25,6 +25,7 @@
 
 package net.kdt.pojavlaunch.aerix.components
 
+import androidx.compose.ui.graphics.Brush
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -132,16 +133,10 @@ fun AerixPillTabRow(
 ) {
     Row(
         modifier = modifier
-            .liquidGlass(
-                shape = CircleShape,
-                tint = AerixSurface.glassTint,
-                strength = 0.72f,
-                elevation = AerixMetrics.glassSelectedElevation
-            )
             .selectableGroup()
             .horizontalScroll(rememberScrollState())
             .padding(contentPadding),
-        horizontalArrangement = Arrangement.spacedBy(AerixSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         content = content
     )
@@ -162,21 +157,16 @@ fun AerixPillTab(
         animationSpec = tween(durationMillis = 160),
         label = "aerixTabOutline"
     )
-    val contentColor = if (selected) activeAccent else AerixSurface.textSecondary
+    val contentColor = if (selected) Color.White else Color(0xFFA79DC4)
     val interactionSource = remember { MutableInteractionSource() }
 
     Surface(
         modifier = modifier
             .defaultMinSize(minHeight = AerixMetrics.pillTabHeight)
-            .then(
-                if (selected) {
-                    Modifier.liquidGlass(
-                        shape = CircleShape,
-                        tint = activeAccent,
-                        strength = 0.95f,
-                        elevation = AerixMetrics.glassSelectedElevation
-                    )
-                } else Modifier
+            .clip(CircleShape)
+            .background(
+                if (selected) Brush.linearGradient(listOf(Color(0xFF5B2EE0), Color(0xFF8B5CF6), Color(0xFFB57BFF)))
+                else Brush.linearGradient(listOf(Color(0xFF140E27), Color(0xFF140E27)))
             )
             .selectable(
                 selected = selected,
@@ -189,8 +179,8 @@ fun AerixPillTab(
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = if (enabled) contentColor else contentColor.copy(alpha = 0.48f),
-        border = BorderStroke(AerixSpacing.hairline, outline),
-        shadowElevation = if (selected) AerixSpacing.xs else 0.dp
+        border = BorderStroke(1.dp, if (selected) Color(0x55FFFFFF) else Color(0x338B5CF6)),
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = AerixSpacing.md, vertical = AerixSpacing.sm),
