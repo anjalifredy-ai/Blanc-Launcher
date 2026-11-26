@@ -54,14 +54,14 @@ import net.kdt.pojavlaunch.aerix.bridge.PojavAccountBridge
 import java.io.File
 import java.io.FileOutputStream
 
-private val tones = intArrayOf(0xFFF5CBA7, 0xFFE8B98C, 0xFFD39B6F, 0xFFB57A52, 0xFF8D5A3B, 0xFF6B4226, 0xFFFFE0C8, 0xFFA8D5A2).map { it.toInt() }
-private val hairs = intArrayOf(0xFF1B1B1B, 0xFF4A2F1B, 0xFF8B5A2B, 0xFFE0B44C, 0xFFB5381E, 0xFFEDEDED, 0xFF5B2EE0, 0xFF2AA3D6, 0xFFE0559C, 0xFF3DA35D).map { it.toInt() }
-private val shirts = intArrayOf(
+private val tones = longArrayOf(0xFFF5CBA7, 0xFFE8B98C, 0xFFD39B6F, 0xFFB57A52, 0xFF8D5A3B, 0xFF6B4226, 0xFFFFE0C8, 0xFFA8D5A2).map { it.toInt() }
+private val hairs = longArrayOf(0xFF1B1B1B, 0xFF4A2F1B, 0xFF8B5A2B, 0xFFE0B44C, 0xFFB5381E, 0xFFEDEDED, 0xFF5B2EE0, 0xFF2AA3D6, 0xFFE0559C, 0xFF3DA35D).map { it.toInt() }
+private val shirts = longArrayOf(
     0xFF8B5CF6, 0xFFE0455C, 0xFF2E86DE, 0xFF27AE60, 0xFFF39C12, 0xFF1F1F2E,
     0xFFECF0F1, 0xFFE056A0, 0xFF16A085, 0xFF7F8C8D, 0xFFD35400, 0xFF34495E
 ).map { it.toInt() }
-private val pants = intArrayOf(0xFF2C3E50, 0xFF1B1B1B, 0xFF4A5A8A, 0xFF6D4C41, 0xFF5B2EE0, 0xFF7F8C8D).map { it.toInt() }
-private val accents = intArrayOf(0xFFFFFFFF, 0xFF111111, 0xFFFFD54F, 0xFF80DEEA).map { it.toInt() }
+private val pants = longArrayOf(0xFF2C3E50, 0xFF1B1B1B, 0xFF4A5A8A, 0xFF6D4C41, 0xFF5B2EE0, 0xFF7F8C8D).map { it.toInt() }
+private val accents = longArrayOf(0xFFFFFFFF, 0xFF111111, 0xFFFFD54F, 0xFF80DEEA).map { it.toInt() }
 
 /** Skin number [n] of the built-in library: tones x hair x shirt x pants x accent = 23,040 looks. */
 private fun skinFor(n: Int): Bitmap {

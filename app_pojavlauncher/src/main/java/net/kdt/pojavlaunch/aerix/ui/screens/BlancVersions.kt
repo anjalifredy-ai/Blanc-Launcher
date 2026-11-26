@@ -1,5 +1,6 @@
 package net.kdt.pojavlaunch.aerix.ui.screens
 
+import androidx.compose.foundation.layout.PaddingValues
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -43,7 +44,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.PaddingValues
 import androidx.fragment.app.FragmentActivity
 import net.kdt.pojavlaunch.R
 import net.kdt.pojavlaunch.aerix.bridge.AerixLoader
