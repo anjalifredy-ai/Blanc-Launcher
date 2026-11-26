@@ -117,7 +117,7 @@ fun ServersScreen(activity: FragmentActivity) {
         }
     }
 
-    AerixPage(title = "Servers", subtitle = "Your Minecraft Java servers") {
+    AerixPage(title = "Servers", subtitle = "Play with friends on your favourite servers") {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             AerixGhostButton("Refresh", R.drawable.aerix_ic_refresh, { refreshing++ })
             AerixGhostButton("Add", R.drawable.aerix_ic_add, { adding = true })
@@ -234,9 +234,9 @@ private fun ServerCard(entry: SavedServer, result: ServerResult?, accent: Color,
             ServerArtworkImages.load(artwork)?.asImageBitmap()
         }
     }
-    Surface(shape = RoundedCornerShape(18.dp), color = AerixSurface.panel, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(20.dp), color = Blanc.card, border = androidx.compose.foundation.BorderStroke(1.dp, Blanc.line), modifier = Modifier.fillMaxWidth()) {
         Column {
-            Box(Modifier.fillMaxWidth().height(82.dp).background(Brush.linearGradient(listOf(accent.copy(alpha = 0.5f), Color(0xFF151820))))) {
+            Box(Modifier.fillMaxWidth().height(82.dp).background(Brush.linearGradient(listOf(Color(0xFF5B2EE0).copy(alpha = 0.6f), Color(0xFF140E27))))) {
                 Image(painterResource(automaticBanner), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 if (banner != null) Image(banner, contentDescription = "${entry.name} custom banner", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 else if (publicArtwork != null) Image(publicArtwork!!, contentDescription = "${entry.name} server artwork", contentScale = if (artwork?.banner == true) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -264,7 +264,7 @@ private fun ServerCard(entry: SavedServer, result: ServerResult?, accent: Color,
             }
             Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = onJoin, contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Join") }
+                Button(onClick = onJoin, colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Blanc.violet, contentColor = Color.White), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Join") }
                 Spacer(Modifier.width(6.dp))
                 Box {
                     IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) {
