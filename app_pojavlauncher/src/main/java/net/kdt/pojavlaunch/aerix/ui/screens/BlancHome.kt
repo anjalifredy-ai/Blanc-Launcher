@@ -127,6 +127,7 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, e
                 net.kdt.pojavlaunch.aerix.ui.screens.AerixDownloadRequest.open(AssetType.MOD, navigate)
             }
             Feature("Multiplayer", "Play Together", R.drawable.aerix_ic_group_outlined, Modifier.weight(1f)) { navigate(LauncherSection.MULTIPLAYER) }
+            Feature("Realms", "Join Anytime", R.drawable.aerix_ic_public, Modifier.weight(1f)) { navigate(LauncherSection.REALMS) }
             Feature("Hosting", "Own Server", R.drawable.aerix_ic_terminal_outlined, Modifier.weight(1f)) { navigate(LauncherSection.HOST) }
         }
     }
