@@ -27,7 +27,8 @@ jobs:
           cat gradle.properties
       - name: Build
         working-directory: blanc-mod
-        run: gradle build --no-daemon --stacktrace 2>&1 | tee /tmp/mod.log | tail -60
+        run: |
+          gradle build --no-daemon > /tmp/mod.log 2>&1 || { grep -E "What went wrong" -A14 /tmp/mod.log | head -50; grep -E "error:|warning: \[" -A2 /tmp/mod.log | head -40; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: blanc-client-mod
