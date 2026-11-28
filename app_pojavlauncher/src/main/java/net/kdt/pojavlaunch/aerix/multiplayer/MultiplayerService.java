@@ -242,7 +242,12 @@ public final class MultiplayerService extends Service {
         reporter = new Thread(() -> {
             while (true) {
                 try { Thread.sleep(3000); } catch (InterruptedException e) { return; }
-                if (state.equals("ONLINE")) publish();
+                if (state.equals("ONLINE")) {
+                    CappedProxy pr = proxy;
+                    String err = pr == null ? null : pr.lastError();
+                    if (err != null) synchronized (lock) { message = "Last failed connection - " + err; }
+                    publish();
+                }
             }
         }, "blanc-mp-report");
         reporter.setDaemon(true);

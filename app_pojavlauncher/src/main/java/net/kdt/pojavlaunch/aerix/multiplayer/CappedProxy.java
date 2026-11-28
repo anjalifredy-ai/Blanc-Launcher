@@ -19,6 +19,10 @@ public final class CappedProxy {
     private final int max;
     private final AtomicInteger open = new AtomicInteger();
     private volatile boolean running;
+    private volatile String lastError;
+
+    /** The most recent failure while forwarding a connection, or null. */
+    public String lastError() { return lastError; }
     private ServerSocket server;
 
     public CappedProxy(String targetHost, int targetPort, int max) {
@@ -67,7 +71,8 @@ public final class CappedProxy {
             back.setDaemon(true);
             back.start();
             pump(client, upstream);
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            lastError = e.getClass().getSimpleName() + ": " + e.getMessage() + " (" + targetHost + ":" + targetPort + ")";
         } finally {
             closeQuietly(client);
             closeQuietly(upstream);

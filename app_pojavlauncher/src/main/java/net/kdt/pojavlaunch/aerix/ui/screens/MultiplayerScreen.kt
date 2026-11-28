@@ -141,6 +141,7 @@ fun MultiplayerScreen(activity: FragmentActivity, navigate: (LauncherSection) ->
                             }
                         }
                         if (mp.mode == "host" && mp.state != "OFF" && mp.code.isEmpty()) Text(mp.message, color = Blanc.amber, fontSize = 11.sp)
+                        if (mp.state == "ONLINE" && mp.message.startsWith("Last failed")) Text(mp.message, color = Color(0xFFFF6B6B), fontSize = 11.sp)
                         if (mp.state == "ERROR") Text(mp.message, color = Color(0xFFFF6B6B), fontSize = 11.sp)
                         Pill("START & SHARE", true) { host() }
                     }
