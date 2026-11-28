@@ -236,6 +236,23 @@ object PojavCreateInstanceBridge {
         }
     }
 
+    private const val BLANC_MOD_MC = "1.21.11"
+    private const val BLANC_MOD_URL = "https://github.com/anjalifredy-ai/Blanc-Launcher/releases/download/blanc-mod/blanc-client.jar"
+
+    /** Blanc Client rides along with every Fabric 1.21.11 instance. A failed download never blocks the install. */
+    private fun installBlancMod(gameDir: java.io.File) {
+        runCatching {
+            val mods = java.io.File(gameDir, "mods")
+            mods.mkdirs()
+            val target = java.io.File(mods, "blanc-client.jar")
+            val tmp = java.io.File(mods, "blanc-client.jar.part")
+            val conn = java.net.URL(BLANC_MOD_URL).openConnection() as java.net.HttpURLConnection
+            conn.connectTimeout = 15000; conn.readTimeout = 30000; conn.instanceFollowRedirects = true
+            conn.inputStream.use { input -> tmp.outputStream().use { input.copyTo(it) } }
+            if (tmp.length() > 1024) { target.delete(); tmp.renameTo(target) } else tmp.delete()
+        }
+    }
+
     @Throws(Exception::class)
     private fun performInstall(
         context: Context,
@@ -324,6 +341,7 @@ object PojavCreateInstanceBridge {
                 created
             }
         }
+        if (instance != null && loader == AerixLoader.FABRIC && gameVersion == BLANC_MOD_MC) installBlancMod(instance.gameDirectory)
         if (instance != null) {
             if (icon != null) {
                 instance.encodeNewIcon(icon)
