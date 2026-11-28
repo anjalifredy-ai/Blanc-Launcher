@@ -44,7 +44,7 @@ public final class BlancScreen extends Screen {
         }
         Minecraft mc = Minecraft.getInstance();
         ServerData data = new ServerData("Blanc Realm", target, ServerData.Type.OTHER);
-        ServerAddress addr = ServerAddress.parse(target);
+        ServerAddress addr = ServerAddress.parseString(target);
         connect(parent, mc, addr, data);
     }
 
