@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,34 +92,6 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, e
     val account = PojavAccountBridge.current
     val play: () -> Unit = { PojavLaunchBridge.play(activity) }
 
-    val rightColumn: @Composable androidx.compose.foundation.layout.ColumnScope.(Boolean) -> Unit = { fill ->
-        val cm = if (fill) Modifier.weight(1f) else Modifier
-        InfoCard(cm, fill, onClick = { navigate(LauncherSection.ACCOUNTS) }) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AerixImageWell(image = account?.face, fallback = R.drawable.aerix_head_steve, size = 40.dp, radius = 12.dp)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(account?.username ?: "No account", color = Blanc.ivory, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(account?.authType?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Tap to add", color = Blanc.dim, fontSize = 11.sp)
-                }
-                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
-            }
-        }
-        InfoCard(cm, fill, onClick = { navigate(LauncherSection.VERSIONS) }) {
-            Text("Game Version", color = Blanc.dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(26.dp).clip(RoundedCornerShape(8.dp)).background(Blanc.hero), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.aerix_ic_videogame_asset_outlined), null, tint = Color.White, modifier = Modifier.size(15.dp))
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(selected?.let { mcOf(it.versionId) } ?: "None", color = Blanc.ivory, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
-            }
-        }
-        ProfilePicker(cm, fill, selected?.name, instances.map { it.name }) { index -> PojavInstanceBridge.select(instances[index]) }
-    }
-
     val features: @Composable (Modifier) -> Unit = { mod ->
         Row(mod, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             NewsTile("COSMETICS", "1000+ looks", listOf(Color(0xFF7B2FF7), Color(0xFFC084FC)), Modifier.weight(1f)) { navigate(LauncherSection.WARDROBE) }
@@ -138,21 +111,40 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, e
 
     Box(Modifier.fillMaxSize().background(Blanc.ink).background(Brush.radialGradient(listOf(Color(0x448B5CF6), Color.Transparent), radius = 900f))) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
+            val pickInstance: (net.kdt.pojavlaunch.aerix.bridge.AerixInstance) -> Unit = { PojavInstanceBridge.select(it) }
+            val addProfile = { navigate(LauncherSection.CREATE_INSTANCE) }
             if (maxWidth >= 560.dp) {
                 Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(Modifier.weight(1.55f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Hero(selected, account, Modifier.weight(1f).fillMaxWidth(), play, editionSwitch) { navigate(LauncherSection.CREATE_INSTANCE) }
-                        features(Modifier.fillMaxWidth().height(84.dp))
+                    Column(Modifier.weight(1.6f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Hero(selected, account, Modifier.weight(1f).fillMaxWidth(), play, editionSwitch, { navigate(LauncherSection.VERSIONS) }, addProfile)
+                        ProfileSlots(instances, selected, Modifier.fillMaxWidth().height(38.dp), pickInstance, addProfile)
+                        features(Modifier.fillMaxWidth().height(80.dp))
                     }
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        rightColumn(true)
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        InfoCard(Modifier, false, onClick = { navigate(LauncherSection.ACCOUNTS) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AerixImageWell(image = account?.face, fallback = R.drawable.aerix_head_steve, size = 34.dp, radius = 10.dp)
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(account?.username ?: "No account", color = Blanc.ivory, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(account?.authType?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Tap to add", color = Blanc.dim, fontSize = 10.sp)
+                                }
+                                Text("\u2304", color = Blanc.dim, fontSize = 16.sp)
+                            }
+                        }
+                        PromoCard("Blanc Realms", "Play with friends anytime", "JOIN", listOf(Color(0xFF3B1FA8), Color(0xFF6D3FF0)), Modifier.height(54.dp)) { navigate(LauncherSection.REALMS) }
+                        PromoCard("Wardrobe", "1000+ skins and looks", "OPEN", listOf(Color(0xFF1F7A4A), Color(0xFF2FA865)), Modifier.height(54.dp)) { navigate(LauncherSection.WARDROBE) }
+                        Text("POPULAR SERVERS", color = Blanc.dim, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp, start = 2.dp))
+                        POPULAR.forEach { ServerRow(it, Modifier.weight(1f)) { navigate(LauncherSection.SERVERS) } }
                     }
                 }
             } else {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Hero(selected, account, Modifier.fillMaxWidth().height(230.dp), play, editionSwitch) { navigate(LauncherSection.CREATE_INSTANCE) }
-                    rightColumn(false)
+                    Hero(selected, account, Modifier.fillMaxWidth().height(300.dp), play, editionSwitch, { navigate(LauncherSection.VERSIONS) }, addProfile)
+                    ProfileSlots(instances, selected, Modifier.fillMaxWidth().height(40.dp), pickInstance, addProfile)
                     features(Modifier.fillMaxWidth().height(84.dp))
+                    PromoCard("Blanc Realms", "Play with friends anytime", "JOIN", listOf(Color(0xFF3B1FA8), Color(0xFF6D3FF0)), Modifier.height(56.dp)) { navigate(LauncherSection.REALMS) }
+                    POPULAR.forEach { ServerRow(it, Modifier.height(48.dp)) { navigate(LauncherSection.SERVERS) } }
                 }
             }
         }
@@ -166,45 +158,122 @@ private fun Hero(
     modifier: Modifier,
     onPlay: () -> Unit,
     editionSwitch: @Composable () -> Unit,
+    onVersions: () -> Unit,
     onCreate: () -> Unit
 ) {
-    val shape = RoundedCornerShape(26.dp)
+    val shape = RoundedCornerShape(24.dp)
     Box(
         modifier.clip(shape)
             .background(Brush.linearGradient(listOf(Color(0xFF2B1470), Color(0xFF140B33), Color(0xFF0C0720))))
             .border(BorderStroke(1.dp, Blanc.line), shape)
     ) {
-        Box(Modifier.align(Alignment.TopEnd).size(260.dp).background(Brush.radialGradient(listOf(Color(0x558B5CF6), Color.Transparent))))
-        CubeArt(Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f))
+        Box(Modifier.align(Alignment.Center).size(320.dp).background(Brush.radialGradient(listOf(Color(0x558B5CF6), Color.Transparent))))
+        CubeArt(Modifier.fillMaxSize())
         Box(Modifier.align(Alignment.TopEnd).padding(12.dp)) { editionSwitch() }
         if (account != null) {
             AerixSkinPreview3D(
                 account = account,
                 interactionEnabled = false,
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(170.dp).padding(vertical = 6.dp)
+                modifier = Modifier.align(Alignment.Center).fillMaxHeight().width(170.dp).padding(top = 34.dp, bottom = 48.dp)
+            )
+            Text(
+                account.username, color = Blanc.ivory, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xAA0A0614))
+                    .border(BorderStroke(1.dp, Blanc.line), RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 5.dp)
             )
         }
-        Column(Modifier.align(Alignment.CenterStart).padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("READY TO PLAY", color = Blanc.rose, fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
-            Text(
-                selected?.name ?: "Create your first instance", color = Blanc.ivory, fontSize = 26.sp, fontWeight = FontWeight.Black,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(210.dp)
-            )
-            if (selected != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Chip(loaderOf(selected.versionId)); Chip(mcOf(selected.versionId))
+        if (selected != null) Row(Modifier.align(Alignment.TopStart).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Chip(loaderOf(selected.versionId)); Chip(mcOf(selected.versionId))
+        }
+        val pill = RoundedCornerShape(16.dp)
+        Row(
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp).height(52.dp).widthIn(min = 230.dp, max = 330.dp)
+                .shadow(16.dp, pill, ambientColor = Blanc.violet, spotColor = Blanc.violet).clip(pill).background(Blanc.hero)
+                .border(BorderStroke(1.dp, Color(0x66FFFFFF)), pill),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Button) { if (selected != null) onPlay() else onCreate() },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
+            ) {
+                Text(if (selected != null) "LAUNCH GAME" else "CREATE INSTANCE", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                if (selected != null) Text(mcOf(selected.versionId) + " - " + loaderOf(selected.versionId), color = Color(0xDDFFFFFF), fontSize = 10.sp, maxLines = 1)
             }
-            Spacer(Modifier.height(4.dp))
-            val pill = RoundedCornerShape(50)
+            Box(Modifier.width(1.dp).fillMaxHeight().background(Color(0x44FFFFFF)))
+            Box(Modifier.width(44.dp).fillMaxHeight().clickable(role = Role.Button, onClick = onVersions), contentAlignment = Alignment.Center) {
+                Text("\u2304", color = Color.White, fontSize = 20.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSlots(instances: List<net.kdt.pojavlaunch.aerix.bridge.AerixInstance>, selected: net.kdt.pojavlaunch.aerix.bridge.AerixInstance?, modifier: Modifier, onPick: (net.kdt.pojavlaunch.aerix.bridge.AerixInstance) -> Unit, onAdd: () -> Unit) {
+    val shown = instances.take(3)
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        shown.forEach { inst ->
+            val on = inst.id == selected?.id
+            val sh = RoundedCornerShape(14.dp)
             Row(
-                Modifier.height(50.dp).shadow(14.dp, pill, ambientColor = Blanc.violet, spotColor = Blanc.violet).clip(pill).background(Blanc.hero).border(BorderStroke(1.dp, Color(0x66FFFFFF)), pill)
-                    .clickable(role = Role.Button) { if (selected != null) onPlay() else onCreate() }.padding(horizontal = 24.dp),
+                Modifier.weight(1f).fillMaxHeight().clip(sh).background(if (on) Blanc.cardHi else Blanc.card)
+                    .border(BorderStroke(1.dp, if (on) Blanc.violet else Blanc.line), sh).clickable { onPick(inst) }.padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(painterResource(if (selected != null) R.drawable.aerix_ic_play_arrow_filled else R.drawable.aerix_ic_add), null, tint = Color.White, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(if (selected != null) "Launch Game" else "Create", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                Text(inst.name, color = Blanc.ivory, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             }
         }
+        repeat(3 - shown.size) {
+            val sh = RoundedCornerShape(14.dp)
+            Row(
+                Modifier.weight(1f).fillMaxHeight().clip(sh).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), sh).clickable(onClick = onAdd),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
+            ) { Text("+  Add a Profile", color = Blanc.dim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+        }
+    }
+}
+
+private class PopularServer(val name: String, val address: String, val colors: List<Color>)
+private val POPULAR = listOf(
+    PopularServer("Hypixel", "mc.hypixel.net", listOf(Color(0xFFB7791F), Color(0xFF7A4B0E))),
+    PopularServer("Mineplex", "mineplex.com", listOf(Color(0xFFD9822B), Color(0xFF8A4A12))),
+    PopularServer("MCC Island", "play.mccisland.net", listOf(Color(0xFF3B8E5A), Color(0xFF1F5A38))),
+    PopularServer("DonutSMP", "donutsmp.net", listOf(Color(0xFF2B7BE0), Color(0xFF1B4C96)))
+)
+
+@Composable
+private fun PromoCard(title: String, sub: String, action: String, colors: List<Color>, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        modifier.fillMaxWidth().clip(shape).background(Brush.linearGradient(colors)).border(BorderStroke(1.dp, Color(0x44FFFFFF)), shape).padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text(sub, color = Color(0xCCFFFFFF), fontSize = 11.sp)
+        }
+        Text(
+            action, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black,
+            modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0x66000000)).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun ServerRow(s: PopularServer, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier.fillMaxWidth().clip(shape).background(Blanc.card).border(BorderStroke(1.dp, Blanc.line), shape).clickable(onClick = onClick).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(Brush.linearGradient(s.colors)), contentAlignment = Alignment.Center) {
+            Text(s.name.take(1), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(s.name, color = Blanc.ivory, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(s.address, color = Blanc.dim, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Text("\u25CF", color = Color(0xFF4ADE80), fontSize = 10.sp)
     }
 }
 
