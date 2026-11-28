@@ -21,7 +21,7 @@ jobs:
           MC=1.21.11
           LOADER=$(curl -fsS https://meta.fabricmc.net/v2/versions/loader | python3 -c "import json,sys; print([x['version'] for x in json.load(sys.stdin) if x['stable']][0])")
           API=$(curl -fsS https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml | grep -o "<version>[^<]*+$MC</version>" | sed 's/<[^>]*>//g' | tail -1)
-          LOOM=$(curl -fsS https://maven.fabricmc.net/net/fabricmc/fabric-loom/maven-metadata.xml | grep -o '<version>1\.1[0-4][^<]*</version>' | sed 's/<[^>]*>//g' | grep -v SNAPSHOT | sort -V | tail -1)
+          LOOM=$(curl -fsS https://maven.fabricmc.net/net/fabricmc/fabric-loom/maven-metadata.xml | grep -o '<version>1\.11[^<]*</version>' | sed 's/<[^>]*>//g' | grep -v SNAPSHOT | sort -V | tail -1)
           echo "mc=$MC loader=$LOADER api=$API loom=$LOOM"
           sed -i "s/^minecraft_version=.*/minecraft_version=$MC/; s/^loader_version=.*/loader_version=$LOADER/; s/^fabric_version=.*/fabric_version=$API/; s/^loom_version=.*/loom_version=$LOOM/" gradle.properties
           cat gradle.properties
