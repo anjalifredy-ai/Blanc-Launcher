@@ -121,14 +121,18 @@ fun BlancHome(activity: FragmentActivity, navigate: (LauncherSection) -> Unit, e
 
     val features: @Composable (Modifier) -> Unit = { mod ->
         Row(mod, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Feature("Fast Launch", "Max FPS", R.drawable.aerix_ic_rocket_launch_filled, Modifier.weight(1f)) { play() }
-            Feature("Mod Support", "One Click", R.drawable.aerix_ic_extension_outlined, Modifier.weight(1f)) {
-                BlancNav.kind = AssetType.MOD
-                net.kdt.pojavlaunch.aerix.ui.screens.AerixDownloadRequest.open(AssetType.MOD, navigate)
+            NewsTile("COSMETICS", "1000+ looks", listOf(Color(0xFF7B2FF7), Color(0xFFC084FC)), Modifier.weight(1f)) { navigate(LauncherSection.WARDROBE) }
+            NewsTile("REALMS", "Join anytime", listOf(Color(0xFF2B5BE0), Color(0xFF7C9CFF)), Modifier.weight(1f)) { navigate(LauncherSection.REALMS) }
+            NewsTile("HOSTING", "Own server", listOf(Color(0xFF4B1FA8), Color(0xFF8B5CF6)), Modifier.weight(1f)) { navigate(LauncherSection.HOST) }
+            Column(
+                Modifier.weight(1.2f).fillMaxHeight().clip(RoundedCornerShape(18.dp)).background(Blanc.card)
+                    .border(BorderStroke(1.dp, Blanc.line), RoundedCornerShape(18.dp)).clickable { navigate(LauncherSection.MULTIPLAYER) }.padding(12.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("FRIENDS", color = Blanc.rose, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("Play together", color = Blanc.ivory, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                Text("Join with a 5-char code", color = Blanc.dim, fontSize = 10.sp)
             }
-            Feature("Multiplayer", "Play Together", R.drawable.aerix_ic_group_outlined, Modifier.weight(1f)) { navigate(LauncherSection.MULTIPLAYER) }
-            Feature("Realms", "Join Anytime", R.drawable.aerix_ic_public, Modifier.weight(1f)) { navigate(LauncherSection.REALMS) }
-            Feature("Hosting", "Own Server", R.drawable.aerix_ic_terminal_outlined, Modifier.weight(1f)) { navigate(LauncherSection.HOST) }
         }
     }
 
@@ -277,5 +281,20 @@ internal fun CubeArt(modifier: Modifier) {
         cube(w * 0.32f, hh * 0.60f, hh * 0.15f, 0.6f)
         cube(w * 0.60f, hh * 0.78f, hh * 0.20f, 0.8f)
         cube(w * 0.90f, hh * 0.82f, hh * 0.12f, 0.55f)
+    }
+}
+
+@Composable
+private fun NewsTile(title: String, sub: String, colors: List<Color>, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Box(
+        modifier.fillMaxHeight().clip(shape).background(Brush.linearGradient(colors)).border(BorderStroke(1.dp, Color(0x44FFFFFF)), shape)
+            .clickable(role = Role.Button, onClick = onClick)
+    ) {
+        CubeArt(Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.5f))
+        Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
+            Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+            Text(sub, color = Color(0xCCFFFFFF), fontSize = 10.sp)
+        }
     }
 }
